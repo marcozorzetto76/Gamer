@@ -92,10 +92,12 @@ header{display:flex;align-items:center;gap:8px}
 #ghost{position:fixed;pointer-events:none;width:62px;height:62px;z-index:50;transform:translate(-50%,-62%) scale(1.12);display:none;filter:drop-shadow(0 6px 8px rgba(20,40,70,.3))}
 #ghost svg{width:100%;height:100%}
 
-#controls{display:grid;grid-template-columns:1fr 1fr 1fr 1.15fr;gap:9px}
-.btn{border:none;font-family:inherit;font-weight:800;font-size:12.5px;color:#31517a;background:linear-gradient(#ffffff,#e9f1fa);border-radius:17px;padding:9px 4px 8px;box-shadow:0 4px 0 #b9cbe0,0 8px 16px rgba(20,40,70,.16);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
-.btn .ico{height:26px;display:flex;align-items:center}
-.btn .ico svg{width:30px;height:26px}
+#controls{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.btn{position:relative;border:none;font-family:inherit;font-weight:800;font-size:11px;color:#31517a;background:linear-gradient(#ffffff,#e9f1fa);border-radius:17px;padding:9px 4px 8px;box-shadow:0 4px 0 #b9cbe0,0 8px 16px rgba(20,40,70,.16);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.btn .ico{height:24px;display:flex;align-items:center}
+.btn .ico svg{width:27px;height:24px}
+.qdot{position:absolute;top:4px;right:7px;width:11px;height:11px;border-radius:50%;background:#ff5f7e;box-shadow:0 0 0 2.5px #fff;display:none}
+.qdot.show{display:block}
 .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b9cbe0,0 3px 8px rgba(20,40,70,.16)}
 .btn:disabled{opacity:.5}
 .btn:focus-visible,#langSel:focus-visible{outline:3px solid #ffb84d;outline-offset:2px}
@@ -134,6 +136,18 @@ header{display:flex;align-items:center;gap:8px}
 #realBtn{background:#dcefff;color:#1e5b8a;box-shadow:0 3px 0 #a8cbe8}
 .closebtn{background:#eceff4;color:#5a7290;box-shadow:0 3px 0 #ccd4de}
 .sheetbtn:active{transform:translateY(2px);box-shadow:none}
+.qcard{display:flex;align-items:center;gap:10px;background:#f2f6fb;border-radius:16px;padding:10px 12px;margin-bottom:8px}
+.qicon{flex:none;width:42px;height:42px}
+.qicon svg{width:100%;height:100%}
+.qmid{flex:1;min-width:0}
+.qtext{font-size:12.5px;font-weight:800}
+.qbar{height:8px;background:#dde6f0;border-radius:99px;margin-top:6px;overflow:hidden}
+.qfill{height:100%;background:linear-gradient(90deg,#8ce99a,#3fae6a);border-radius:99px;transition:width .4s}
+.qgo{border:none;font-family:inherit;font-weight:800;background:linear-gradient(#ffe9b0,#ffc65c);color:#7a4a00;border-radius:12px;padding:9px 13px;font-size:12.5px;box-shadow:0 3px 0 #d99b2b;cursor:pointer;flex:none}
+.qgo:active{transform:translateY(2px);box-shadow:none}
+.qdone{font-weight:900;color:#3fae6a;font-size:20px;flex:none;padding:0 8px}
+.qrew{display:flex;align-items:center;gap:4px;font-weight:800;font-size:12.5px;color:#b8860b;flex:none}
+.qrew svg{width:17px;height:17px}
 
 button.chip{border:none;cursor:pointer;font-family:inherit}
 button.chip:active{transform:scale(.92)}
@@ -199,6 +213,7 @@ button.chip:active{transform:scale(.92)}
     <button class="btn" id="cloudBtn"><span class="ico" id="cloudIco"></span><span id="cloudLbl"></span></button>
     <button class="btn" id="dexBtn"><span class="ico" id="dexIco"></span><span>Meteodex</span></button>
     <button class="btn" id="balloonBtn"><span class="ico" id="balloonIco"></span><span id="balloonLbl"></span></button>
+    <button class="btn" id="questBtn"><span class="ico" id="questIco"></span><span id="questLbl"></span><span class="qdot" id="qdot"></span></button>
     <button class="btn" id="adBtn"><span class="ico" id="adIco"></span><span id="adLbl"></span></button>
   </div>
 </div>
@@ -221,6 +236,12 @@ button.chip:active{transform:scale(.92)}
   <button class="sheetbtn closebtn" data-close="dexOv"></button>
 </div></div>
 
+<div class="overlay" id="questOv"><div class="sheet">
+  <h2 id="questTitle"></h2>
+  <div id="questList"></div>
+  <button class="sheetbtn closebtn" data-close="questOv"></button>
+</div></div>
+
 <div class="overlay" id="balloonOv"><div class="sheet">
   <h2 id="balloonTitle"></h2>
   <div class="wgrid" id="wGrid"></div>
@@ -233,16 +254,16 @@ button.chip:active{transform:scale(.92)}
 /* ---------------- i18n ---------------- */
 const LANGS = {en:"🇬🇧 EN",it:"🇮🇹 IT",es:"🇪🇸 ES",fr:"🇫🇷 FR",de:"🇩🇪 DE",pt:"🇧🇷 PT",ja:"🇯🇵 日本語",ko:"🇰🇷 한국어",zh:"🇨🇳 中文",ru:"🇷🇺 РУ"};
 const I18N = {
-en:{tutorial:"Drag two identical items together to merge them!",cloud:"Seeds",cloudHint:"Tap the cloud to get new items",newCreature:"A creature appeared! Tap it!",boardFull:"The park is full! Merge something first.",balloons:"Balloons",balloonTitle:"🎈 Weather Balloons (demo)",real:"📍 Use my real weather",realFail:"Real weather unavailable — demo mode",realOn:"Real weather active!",ad:"+50 (demo ad)",adDone:"+50 Thanks for watching!",tap:"Tap to play!",parkEmpty:"Caught Meteolings will stroll here!",close:"Close",rarity:["Common","Rare","Epic","Legendary"],weather:{sunny:"Sunny",rain:"Rain",storm:"Storm",snow:"Snow",fog:"Fog",night:"Night",rainbow:"Rainbow"}},
-it:{tutorial:"Trascina due oggetti uguali per unirli!",cloud:"Semi",cloudHint:"Tocca la nuvola per nuovi oggetti",newCreature:"È apparsa una creatura! Toccala!",boardFull:"Il parco è pieno! Prima unisci qualcosa.",balloons:"Palloni",balloonTitle:"🎈 Palloni Meteo (demo)",real:"📍 Usa il mio meteo reale",realFail:"Meteo reale non disponibile — modalità demo",realOn:"Meteo reale attivo!",ad:"+50 (spot demo)",adDone:"+50 Grazie della visione!",tap:"Tocca per giocare!",parkEmpty:"I Meteolini catturati passeggeranno qui!",close:"Chiudi",rarity:["Comune","Rara","Epica","Leggendaria"],weather:{sunny:"Sole",rain:"Pioggia",storm:"Temporale",snow:"Neve",fog:"Nebbia",night:"Notte",rainbow:"Arcobaleno"}},
-es:{tutorial:"¡Arrastra dos objetos iguales para fusionarlos!",cloud:"Semillas",cloudHint:"Toca la nube para obtener objetos",newCreature:"¡Apareció una criatura! ¡Tócala!",boardFull:"¡El parque está lleno! Fusiona algo primero.",balloons:"Globos",balloonTitle:"🎈 Globos del tiempo (demo)",real:"📍 Usar mi clima real",realFail:"Clima real no disponible — modo demo",realOn:"¡Clima real activo!",ad:"+50 (anuncio demo)",adDone:"+50 ¡Gracias por ver!",tap:"¡Toca para jugar!",parkEmpty:"¡Las criaturas capturadas pasearán aquí!",close:"Cerrar",rarity:["Común","Rara","Épica","Legendaria"],weather:{sunny:"Sol",rain:"Lluvia",storm:"Tormenta",snow:"Nieve",fog:"Niebla",night:"Noche",rainbow:"Arcoíris"}},
-fr:{tutorial:"Fais glisser deux objets identiques pour les fusionner !",cloud:"Graines",cloudHint:"Touche le nuage pour des objets",newCreature:"Une créature est apparue ! Touche-la !",boardFull:"Le parc est plein ! Fusionne d'abord quelque chose.",balloons:"Ballons",balloonTitle:"🎈 Ballons météo (démo)",real:"📍 Utiliser ma vraie météo",realFail:"Météo réelle indisponible — mode démo",realOn:"Météo réelle active !",ad:"+50 (pub démo)",adDone:"+50 Merci d'avoir regardé !",tap:"Touche pour jouer !",parkEmpty:"Les créatures capturées se promèneront ici !",close:"Fermer",rarity:["Commune","Rare","Épique","Légendaire"],weather:{sunny:"Soleil",rain:"Pluie",storm:"Orage",snow:"Neige",fog:"Brouillard",night:"Nuit",rainbow:"Arc-en-ciel"}},
-de:{tutorial:"Ziehe zwei gleiche Objekte zusammen, um sie zu verschmelzen!",cloud:"Samen",cloudHint:"Tippe auf die Wolke für neue Objekte",newCreature:"Eine Kreatur ist erschienen! Tippe sie an!",boardFull:"Der Park ist voll! Verschmilz zuerst etwas.",balloons:"Ballons",balloonTitle:"🎈 Wetterballons (Demo)",real:"📍 Mein echtes Wetter nutzen",realFail:"Echtes Wetter nicht verfügbar — Demomodus",realOn:"Echtes Wetter aktiv!",ad:"+50 (Demo-Werbung)",adDone:"+50 Danke fürs Zuschauen!",tap:"Tippen zum Spielen!",parkEmpty:"Gefangene Kreaturen spazieren hier!",close:"Schließen",rarity:["Gewöhnlich","Selten","Episch","Legendär"],weather:{sunny:"Sonnig",rain:"Regen",storm:"Gewitter",snow:"Schnee",fog:"Nebel",night:"Nacht",rainbow:"Regenbogen"}},
-pt:{tutorial:"Arraste dois itens iguais para fundi-los!",cloud:"Sementes",cloudHint:"Toque na nuvem para novos itens",newCreature:"Uma criatura apareceu! Toque nela!",boardFull:"O parque está cheio! Funda algo primeiro.",balloons:"Balões",balloonTitle:"🎈 Balões do tempo (demo)",real:"📍 Usar meu clima real",realFail:"Clima real indisponível — modo demo",realOn:"Clima real ativo!",ad:"+50 (anúncio demo)",adDone:"+50 Obrigado por assistir!",tap:"Toque para jogar!",parkEmpty:"As criaturas capturadas passearão aqui!",close:"Fechar",rarity:["Comum","Rara","Épica","Lendária"],weather:{sunny:"Sol",rain:"Chuva",storm:"Tempestade",snow:"Neve",fog:"Névoa",night:"Noite",rainbow:"Arco-íris"}},
-ja:{tutorial:"同じアイテムを重ねて合成しよう!",cloud:"タネ",cloudHint:"雲をタップしてアイテムをゲット",newCreature:"生き物があらわれた!タップ!",boardFull:"パークがいっぱい!まず合成しよう。",balloons:"バルーン",balloonTitle:"🎈 お天気バルーン(デモ)",real:"📍 本当の天気を使う",realFail:"天気を取得できません — デモモード",realOn:"実際の天気を使用中!",ad:"+50(デモ広告)",adDone:"+50 視聴ありがとう!",tap:"タップしてスタート!",parkEmpty:"つかまえた生き物がここをお散歩!",close:"閉じる",rarity:["ノーマル","レア","エピック","レジェンド"],weather:{sunny:"晴れ",rain:"雨",storm:"雷雨",snow:"雪",fog:"霧",night:"夜",rainbow:"虹"}},
-ko:{tutorial:"같은 아이템 두 개를 합쳐 보세요!",cloud:"씨앗",cloudHint:"구름을 눌러 아이템을 받으세요",newCreature:"생물이 나타났어요! 눌러 보세요!",boardFull:"공원이 가득 찼어요! 먼저 합성하세요.",balloons:"풍선",balloonTitle:"🎈 날씨 풍선(데모)",real:"📍 실제 날씨 사용",realFail:"실제 날씨 사용 불가 — 데모 모드",realOn:"실제 날씨 사용 중!",ad:"+50 (데모 광고)",adDone:"+50 시청 감사합니다!",tap:"눌러서 시작!",parkEmpty:"잡은 생물들이 여기서 산책해요!",close:"닫기",rarity:["일반","희귀","에픽","전설"],weather:{sunny:"맑음",rain:"비",storm:"폭풍",snow:"눈",fog:"안개",night:"밤",rainbow:"무지개"}},
-zh:{tutorial:"拖动两个相同的物品进行合成!",cloud:"种子",cloudHint:"点击云朵获得新物品",newCreature:"出现了一只生物!点它!",boardFull:"公园满了!先合成一些物品。",balloons:"气球",balloonTitle:"🎈 天气气球(演示)",real:"📍 使用真实天气",realFail:"无法获取真实天气 — 演示模式",realOn:"正在使用真实天气!",ad:"+50(演示广告)",adDone:"+50 感谢观看!",tap:"点击开始!",parkEmpty:"抓到的生物会在这里散步!",close:"关闭",rarity:["普通","稀有","史诗","传说"],weather:{sunny:"晴天",rain:"雨",storm:"雷暴",snow:"雪",fog:"雾",night:"夜晚",rainbow:"彩虹"}},
-ru:{tutorial:"Перетащите два одинаковых предмета, чтобы объединить их!",cloud:"Семена",cloudHint:"Нажмите на облако, чтобы получить предметы",newCreature:"Появилось существо! Нажмите на него!",boardFull:"Парк переполнен! Сначала объедините предметы.",balloons:"Шары",balloonTitle:"🎈 Метеошары (демо)",real:"📍 Использовать мою погоду",realFail:"Погода недоступна — демо-режим",realOn:"Реальная погода активна!",ad:"+50 (демо-реклама)",adDone:"+50 Спасибо за просмотр!",tap:"Нажмите, чтобы играть!",parkEmpty:"Пойманные существа будут гулять здесь!",close:"Закрыть",rarity:["Обычная","Редкая","Эпическая","Легендарная"],weather:{sunny:"Солнечно",rain:"Дождь",storm:"Гроза",snow:"Снег",fog:"Туман",night:"Ночь",rainbow:"Радуга"}}
+en:{tutorial:"Drag two identical items together to merge them!",cloud:"Seeds",cloudHint:"Tap the cloud to get new items",newCreature:"A creature appeared! Tap it!",boardFull:"The park is full! Merge something first.",balloons:"Balloons",balloonTitle:"🎈 Weather Balloons (demo)",real:"📍 Use my real weather",realFail:"Real weather unavailable — demo mode",realOn:"Real weather active!",ad:"+50 (demo ad)",adDone:"+50 Thanks for watching!",tap:"Tap to play!",parkEmpty:"Caught Meteolings will stroll here!",qTitle:"Daily Missions",qClaim:"Claim",qMerge:"Make {n} merges",qCatch:"Catch {n} creatures",qPet:"Pet creatures {n} times",qMax:"Create a max-level item",qb:"Quests",close:"Close",rarity:["Common","Rare","Epic","Legendary"],weather:{sunny:"Sunny",rain:"Rain",storm:"Storm",snow:"Snow",fog:"Fog",night:"Night",rainbow:"Rainbow"}},
+it:{tutorial:"Trascina due oggetti uguali per unirli!",cloud:"Semi",cloudHint:"Tocca la nuvola per nuovi oggetti",newCreature:"È apparsa una creatura! Toccala!",boardFull:"Il parco è pieno! Prima unisci qualcosa.",balloons:"Palloni",balloonTitle:"🎈 Palloni Meteo (demo)",real:"📍 Usa il mio meteo reale",realFail:"Meteo reale non disponibile — modalità demo",realOn:"Meteo reale attivo!",ad:"+50 (spot demo)",adDone:"+50 Grazie della visione!",tap:"Tocca per giocare!",parkEmpty:"I Meteolini catturati passeggeranno qui!",qTitle:"Missioni del giorno",qClaim:"Riscuoti",qMerge:"Fai {n} fusioni",qCatch:"Cattura {n} creature",qPet:"Accarezza {n} volte le creature",qMax:"Crea un oggetto di livello massimo",qb:"Missioni",close:"Chiudi",rarity:["Comune","Rara","Epica","Leggendaria"],weather:{sunny:"Sole",rain:"Pioggia",storm:"Temporale",snow:"Neve",fog:"Nebbia",night:"Notte",rainbow:"Arcobaleno"}},
+es:{tutorial:"¡Arrastra dos objetos iguales para fusionarlos!",cloud:"Semillas",cloudHint:"Toca la nube para obtener objetos",newCreature:"¡Apareció una criatura! ¡Tócala!",boardFull:"¡El parque está lleno! Fusiona algo primero.",balloons:"Globos",balloonTitle:"🎈 Globos del tiempo (demo)",real:"📍 Usar mi clima real",realFail:"Clima real no disponible — modo demo",realOn:"¡Clima real activo!",ad:"+50 (anuncio demo)",adDone:"+50 ¡Gracias por ver!",tap:"¡Toca para jugar!",parkEmpty:"¡Las criaturas capturadas pasearán aquí!",qTitle:"Misiones diarias",qClaim:"Reclamar",qMerge:"Haz {n} fusiones",qCatch:"Atrapa {n} criaturas",qPet:"Acaricia {n} veces a las criaturas",qMax:"Crea un objeto de nivel máximo",qb:"Misiones",close:"Cerrar",rarity:["Común","Rara","Épica","Legendaria"],weather:{sunny:"Sol",rain:"Lluvia",storm:"Tormenta",snow:"Nieve",fog:"Niebla",night:"Noche",rainbow:"Arcoíris"}},
+fr:{tutorial:"Fais glisser deux objets identiques pour les fusionner !",cloud:"Graines",cloudHint:"Touche le nuage pour des objets",newCreature:"Une créature est apparue ! Touche-la !",boardFull:"Le parc est plein ! Fusionne d'abord quelque chose.",balloons:"Ballons",balloonTitle:"🎈 Ballons météo (démo)",real:"📍 Utiliser ma vraie météo",realFail:"Météo réelle indisponible — mode démo",realOn:"Météo réelle active !",ad:"+50 (pub démo)",adDone:"+50 Merci d'avoir regardé !",tap:"Touche pour jouer !",parkEmpty:"Les créatures capturées se promèneront ici !",qTitle:"Missions du jour",qClaim:"Récupérer",qMerge:"Fais {n} fusions",qCatch:"Attrape {n} créatures",qPet:"Caresse {n} fois les créatures",qMax:"Crée un objet de niveau max",qb:"Missions",close:"Fermer",rarity:["Commune","Rare","Épique","Légendaire"],weather:{sunny:"Soleil",rain:"Pluie",storm:"Orage",snow:"Neige",fog:"Brouillard",night:"Nuit",rainbow:"Arc-en-ciel"}},
+de:{tutorial:"Ziehe zwei gleiche Objekte zusammen, um sie zu verschmelzen!",cloud:"Samen",cloudHint:"Tippe auf die Wolke für neue Objekte",newCreature:"Eine Kreatur ist erschienen! Tippe sie an!",boardFull:"Der Park ist voll! Verschmilz zuerst etwas.",balloons:"Ballons",balloonTitle:"🎈 Wetterballons (Demo)",real:"📍 Mein echtes Wetter nutzen",realFail:"Echtes Wetter nicht verfügbar — Demomodus",realOn:"Echtes Wetter aktiv!",ad:"+50 (Demo-Werbung)",adDone:"+50 Danke fürs Zuschauen!",tap:"Tippen zum Spielen!",parkEmpty:"Gefangene Kreaturen spazieren hier!",qTitle:"Tägliche Aufgaben",qClaim:"Abholen",qMerge:"Mache {n} Fusionen",qCatch:"Fange {n} Kreaturen",qPet:"Streichle {n}-mal Kreaturen",qMax:"Erstelle ein Max-Level-Objekt",qb:"Aufgaben",close:"Schließen",rarity:["Gewöhnlich","Selten","Episch","Legendär"],weather:{sunny:"Sonnig",rain:"Regen",storm:"Gewitter",snow:"Schnee",fog:"Nebel",night:"Nacht",rainbow:"Regenbogen"}},
+pt:{tutorial:"Arraste dois itens iguais para fundi-los!",cloud:"Sementes",cloudHint:"Toque na nuvem para novos itens",newCreature:"Uma criatura apareceu! Toque nela!",boardFull:"O parque está cheio! Funda algo primeiro.",balloons:"Balões",balloonTitle:"🎈 Balões do tempo (demo)",real:"📍 Usar meu clima real",realFail:"Clima real indisponível — modo demo",realOn:"Clima real ativo!",ad:"+50 (anúncio demo)",adDone:"+50 Obrigado por assistir!",tap:"Toque para jogar!",parkEmpty:"As criaturas capturadas passearão aqui!",qTitle:"Missões diárias",qClaim:"Resgatar",qMerge:"Faça {n} fusões",qCatch:"Capture {n} criaturas",qPet:"Acaricie as criaturas {n} vezes",qMax:"Crie um item de nível máximo",qb:"Missões",close:"Fechar",rarity:["Comum","Rara","Épica","Lendária"],weather:{sunny:"Sol",rain:"Chuva",storm:"Tempestade",snow:"Neve",fog:"Névoa",night:"Noite",rainbow:"Arco-íris"}},
+ja:{tutorial:"同じアイテムを重ねて合成しよう!",cloud:"タネ",cloudHint:"雲をタップしてアイテムをゲット",newCreature:"生き物があらわれた!タップ!",boardFull:"パークがいっぱい!まず合成しよう。",balloons:"バルーン",balloonTitle:"🎈 お天気バルーン(デモ)",real:"📍 本当の天気を使う",realFail:"天気を取得できません — デモモード",realOn:"実際の天気を使用中!",ad:"+50(デモ広告)",adDone:"+50 視聴ありがとう!",tap:"タップしてスタート!",parkEmpty:"つかまえた生き物がここをお散歩!",qTitle:"デイリーミッション",qClaim:"うけとる",qMerge:"{n}回合成する",qCatch:"生き物を{n}匹つかまえる",qPet:"生き物を{n}回なでる",qMax:"最大レベルのアイテムを作る",qb:"ミッション",close:"閉じる",rarity:["ノーマル","レア","エピック","レジェンド"],weather:{sunny:"晴れ",rain:"雨",storm:"雷雨",snow:"雪",fog:"霧",night:"夜",rainbow:"虹"}},
+ko:{tutorial:"같은 아이템 두 개를 합쳐 보세요!",cloud:"씨앗",cloudHint:"구름을 눌러 아이템을 받으세요",newCreature:"생물이 나타났어요! 눌러 보세요!",boardFull:"공원이 가득 찼어요! 먼저 합성하세요.",balloons:"풍선",balloonTitle:"🎈 날씨 풍선(데모)",real:"📍 실제 날씨 사용",realFail:"실제 날씨 사용 불가 — 데모 모드",realOn:"실제 날씨 사용 중!",ad:"+50 (데모 광고)",adDone:"+50 시청 감사합니다!",tap:"눌러서 시작!",parkEmpty:"잡은 생물들이 여기서 산책해요!",qTitle:"일일 미션",qClaim:"받기",qMerge:"{n}번 합성하기",qCatch:"생물 {n}마리 잡기",qPet:"생물 {n}번 쓰다듬기",qMax:"최대 레벨 아이템 만들기",qb:"미션",close:"닫기",rarity:["일반","희귀","에픽","전설"],weather:{sunny:"맑음",rain:"비",storm:"폭풍",snow:"눈",fog:"안개",night:"밤",rainbow:"무지개"}},
+zh:{tutorial:"拖动两个相同的物品进行合成!",cloud:"种子",cloudHint:"点击云朵获得新物品",newCreature:"出现了一只生物!点它!",boardFull:"公园满了!先合成一些物品。",balloons:"气球",balloonTitle:"🎈 天气气球(演示)",real:"📍 使用真实天气",realFail:"无法获取真实天气 — 演示模式",realOn:"正在使用真实天气!",ad:"+50(演示广告)",adDone:"+50 感谢观看!",tap:"点击开始!",parkEmpty:"抓到的生物会在这里散步!",qTitle:"每日任务",qClaim:"领取",qMerge:"合成{n}次",qCatch:"抓住{n}只生物",qPet:"抚摸生物{n}次",qMax:"制作一个满级物品",qb:"任务",close:"关闭",rarity:["普通","稀有","史诗","传说"],weather:{sunny:"晴天",rain:"雨",storm:"雷暴",snow:"雪",fog:"雾",night:"夜晚",rainbow:"彩虹"}},
+ru:{tutorial:"Перетащите два одинаковых предмета, чтобы объединить их!",cloud:"Семена",cloudHint:"Нажмите на облако, чтобы получить предметы",newCreature:"Появилось существо! Нажмите на него!",boardFull:"Парк переполнен! Сначала объедините предметы.",balloons:"Шары",balloonTitle:"🎈 Метеошары (демо)",real:"📍 Использовать мою погоду",realFail:"Погода недоступна — демо-режим",realOn:"Реальная погода активна!",ad:"+50 (демо-реклама)",adDone:"+50 Спасибо за просмотр!",tap:"Нажмите, чтобы играть!",parkEmpty:"Пойманные существа будут гулять здесь!",qTitle:"Ежедневные задания",qClaim:"Забрать",qMerge:"Сделайте {n} слияний",qCatch:"Поймайте {n} существ",qPet:"Погладьте существ {n} раз",qMax:"Создайте предмет макс. уровня",qb:"Задания",close:"Закрыть",rarity:["Обычная","Редкая","Эпическая","Легендарная"],weather:{sunny:"Солнечно",rain:"Дождь",storm:"Гроза",snow:"Снег",fog:"Туман",night:"Ночь",rainbow:"Радуга"}}
 };
 
 /* ---------------- SVG sprite library ---------------- */
@@ -367,6 +388,43 @@ const snd={
   click:()=>tone(700,0.05,"sine",0.09)
 };
 
+/* generative background music: gentle chords + pentatonic melody, mood follows the weather */
+const MUSIC={timer:null,bar:0};
+function mnote(f,when,dur,vol,type="triangle"){
+  const a=ac(); if(!a||state.muted) return;
+  const t=a.currentTime+when;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol,t+0.08);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(t); o.stop(t+dur+0.05);
+}
+const CHORDS_DAY=[[130.8,164.8,196],[110,130.8,164.8],[87.3,130.8,174.6],[98,123.5,146.8]];
+const SCALE_DAY=[261.6,293.7,329.6,392,440,523.3];
+const CHORDS_NIGHT=[[110,130.8,164.8],[87.3,110,130.8],[98,116.5,146.8],[82.4,98,123.5]];
+const SCALE_NIGHT=[220,261.6,293.7,329.6,392];
+function playBar(){
+  const night=(weather==="night"||weather==="fog");
+  const calm=night||weather==="rain"||weather==="snow";
+  const chords=night?CHORDS_NIGHT:CHORDS_DAY;
+  const scale=night?SCALE_NIGHT:SCALE_DAY;
+  chords[MUSIC.bar%chords.length].forEach(f=>mnote(f,0.02,2.3,0.045));
+  const notes=calm?2:3;
+  for(let i=0;i<notes;i++){
+    if(Math.random()<0.3) continue;
+    mnote(scale[Math.floor(Math.random()*scale.length)],0.15+i*(2.1/notes),0.55,0.06,"sine");
+  }
+  MUSIC.bar++;
+}
+function startMusic(){
+  if(MUSIC.timer) return;
+  if(!ac()) return;
+  playBar();
+  MUSIC.timer=setInterval(playBar,2400);
+}
+
 /* ---------------- game data ---------------- */
 const CREATURES = [
  {id:"sun1",w:"sunny",r:0,n:{en:"Sunny",it:"Girasolino",es:"Solecito",fr:"Soleilou",de:"Sonnchen",pt:"Solzinho",ja:"ヒナタ",ko:"햇살이",zh:"阳阳",ru:"Солнышко"}},
@@ -400,13 +458,13 @@ function cname(c){ return c.n[state.lang]||c.n.en; }
 function save(){
   try{
     const b=state.board.map(c=>c?(c.k==="i"?{k:"i",c:c.c,l:c.l}:{k:"c",id:c.id}):null);
-    localStorage.setItem("meteopark",JSON.stringify({coins:state.coins,dex:state.dex,lang:state.lang,board:b,merged:state.merged,muted:state.muted}));
+    localStorage.setItem("meteopark",JSON.stringify({coins:state.coins,dex:state.dex,lang:state.lang,board:b,merged:state.merged,muted:state.muted,daily:state.daily}));
   }catch(e){}
 }
 function load(){
   try{
     const s=JSON.parse(localStorage.getItem("meteopark"));
-    if(s){state.coins=s.coins||0;state.dex=s.dex||{};state.lang=s.lang;state.merged=!!s.merged;state.muted=!!s.muted;
+    if(s){state.coins=s.coins||0;state.dex=s.dex||{};state.lang=s.lang;state.merged=!!s.merged;state.muted=!!s.muted;state.daily=s.daily||null;
       if(Array.isArray(s.board)&&s.board.length===SIZE) state.board=s.board;}
   }catch(e){}
 }
@@ -423,8 +481,12 @@ function applyLang(){
   document.querySelectorAll(".closebtn").forEach(b=>b.textContent=t("close"));
   $("wName").textContent=t("weather")[weather];
   $("parkMsg").textContent=t("parkEmpty");
+  $("questLbl").textContent=t("qb");
+  $("questTitle").textContent="📋 "+t("qTitle");
   const st=$("splashTap"); if(st) st.textContent=t("tap");
-  renderWeatherGrid(); renderDex(); save();
+  renderWeatherGrid(); renderDex();
+  if(state.daily) renderQuests();
+  save();
 }
 
 /* ---------------- board ---------------- */
@@ -514,6 +576,7 @@ function rebuildPark(){
       snd.chirp();
       hearts(e.clientX,e.clientY);
       spawnFloat(e.clientX,e.clientY-24,"+2");
+      questProg("pet");
     });
     park.appendChild(s);
   });
@@ -575,6 +638,7 @@ function catchCreature(idx){
   spawnFloat(pos.x,pos.y,`+${CATCH_REWARD[cr.r]}`);
   snd.catch();
   toast(`${cname(cr)}!`);
+  questProg("catch");
   save();
 }
 
@@ -637,6 +701,8 @@ function dropItem(src,dst){
       snd.pop(a.l+1);
       if(combo>1) snd.coin();
       if(!state.merged){state.merged=true;$("hint").textContent=t("cloudHint");}
+      questProg("merge");
+      if(a.l+1===maxL) questProg("max");
       maybeCreature(a.l+1,false);
     }else{
       state.board[dst]=null; state.board[src]=null;
@@ -647,6 +713,7 @@ function dropItem(src,dst){
       snd.boom();
       boardEl.classList.add("shake");
       setTimeout(()=>boardEl.classList.remove("shake"),450);
+      questProg("merge");
       maybeCreature(maxL,true);
     }
     save();
@@ -746,6 +813,68 @@ function useRealWeather(){
   },()=>toast(t("realFail")),{timeout:6000});
 }
 
+/* ---------------- daily missions ---------------- */
+function mulberry(seed){
+  return function(){
+    seed|=0; seed=seed+0x6D2B79F5|0;
+    let x=Math.imul(seed^seed>>>15,1|seed);
+    x=x+Math.imul(x^x>>>7,61|x)^x;
+    return ((x^x>>>14)>>>0)/4294967296;
+  };
+}
+const Q_TYPES={merge:{min:8,max:14,reward:60},catch:{min:2,max:3,reward:80},pet:{min:5,max:9,reward:50},max:{min:1,max:1,reward:100}};
+const Q_KEY={merge:"qMerge",catch:"qCatch",pet:"qPet",max:"qMax"};
+function initDaily(){
+  const today=new Date().toISOString().slice(0,10);
+  if(state.daily&&state.daily.date===today) return;
+  const rnd=mulberry(parseInt(today.replace(/-/g,""),10));
+  const keys=Object.keys(Q_TYPES);
+  for(let i=keys.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[keys[i],keys[j]]=[keys[j],keys[i]];}
+  state.daily={date:today,m:keys.slice(0,3).map(tp=>{
+    const c=Q_TYPES[tp];
+    return {t:tp,n:c.min+Math.floor(rnd()*(c.max-c.min+1)),p:0,c:false};
+  })};
+  save();
+}
+function qText(m){ return t(Q_KEY[m.t]).replace("{n}",m.n); }
+function questDot(){
+  const claimable=state.daily&&state.daily.m.some(m=>m.p>=m.n&&!m.c);
+  $("qdot").classList.toggle("show",!!claimable);
+}
+function questProg(type,amt=1){
+  if(!state.daily) return;
+  const m=state.daily.m.find(x=>x.t===type&&!x.c&&x.p<x.n);
+  if(!m) return;
+  m.p=Math.min(m.n,m.p+amt);
+  if(m.p>=m.n){ snd.sparkle(); toast("✓ "+qText(m)); }
+  questDot(); save();
+  if($("questOv").classList.contains("show")) renderQuests();
+}
+const Q_ICON={merge:()=>ITEMS.star[0],catch:()=>CREATURE_ART.sun1,pet:()=>S(`<path d="M50 82 C20 60 14 38 30 28 C40 22 48 28 50 34 C52 28 60 22 70 28 C86 38 80 60 50 82 Z" fill="#ff6b9d"/>`),max:()=>ITEMS.star[3]};
+function renderQuests(){
+  const list=$("questList"); list.innerHTML="";
+  state.daily.m.forEach((m,i)=>{
+    const card=document.createElement("div"); card.className="qcard";
+    const pct=Math.round(100*m.p/m.n);
+    let right;
+    if(m.c) right=`<span class="qdone">✓</span>`;
+    else if(m.p>=m.n) right=`<button class="qgo" data-i="${i}">${t("qClaim")}</button>`;
+    else right=`<span class="qrew">+${Q_TYPES[m.t].reward} ${UI.coin}</span>`;
+    card.innerHTML=`<div class="qicon">${Q_ICON[m.t]()}</div>
+      <div class="qmid"><div class="qtext">${qText(m)} (${m.p}/${m.n})</div>
+      <div class="qbar"><div class="qfill" style="width:${pct}%"></div></div></div>${right}`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll(".qgo").forEach(b=>b.addEventListener("click",()=>{
+    const m=state.daily.m[+b.dataset.i];
+    if(!m||m.c||m.p<m.n) return;
+    m.c=true;
+    state.coins+=Q_TYPES[m.t].reward;
+    updateCoins(); snd.coin(); confetti(innerWidth/2,innerHeight/2);
+    questDot(); renderQuests(); save();
+  }));
+}
+
 /* ---------------- overlays ---------------- */
 function showOverlay(id){ $(id).classList.add("show"); }
 function hideOverlay(id){ $(id).classList.remove("show"); }
@@ -783,6 +912,7 @@ $("cloudBtn").addEventListener("click",()=>{
   if(spawnItem()){ btn.disabled=true; setTimeout(()=>btn.disabled=false,1200); }
 });
 $("dexBtn").addEventListener("click",()=>{snd.click();renderDex();showOverlay("dexOv");});
+$("questBtn").addEventListener("click",()=>{snd.click();renderQuests();showOverlay("questOv");});
 $("balloonBtn").addEventListener("click",()=>{snd.click();showOverlay("balloonOv");});
 $("realBtn").addEventListener("click",useRealWeather);
 $("adBtn").addEventListener("click",()=>{
@@ -817,6 +947,7 @@ $("cloudIco").innerHTML=UI.cloud;
 $("dexIco").innerHTML=UI.dex;
 $("balloonIco").innerHTML=UI.balloon;
 $("adIco").innerHTML=UI.ad;
+$("questIco").innerHTML=Q_ICON.pet();
 const cloudSvg=`<svg viewBox="0 0 100 100">${cloudShape("rgba(255,255,255,.95)")}</svg>`;
 $("cl1").innerHTML=cloudSvg; $("cl2").innerHTML=cloudSvg;
 buildBoard();
@@ -828,7 +959,7 @@ if(state.board.every(c=>!c)){
     state.board[i]={k:"i",c,l};
   });
 }
-muteIcon();
+muteIcon(); initDaily(); questDot();
 renderBoard(); updateCoins(); applyLang(); rebuildPark();
 const qw=new URLSearchParams(location.search).get("w");
 if(qw&&WICONS[qw]){ weatherMode="manual"; setWeather(qw); }
@@ -848,12 +979,14 @@ const titleEl=$("splashTitle");
 });
 $("splashTap").textContent=t("tap");
 $("splash").addEventListener("pointerdown",()=>{
-  ac(); snd.sparkle();
+  ac(); snd.sparkle(); startMusic();
   const sp=$("splash");
   sp.classList.add("hide");
   setTimeout(()=>sp.remove(),750);
 },{once:true});
+document.addEventListener("pointerdown",()=>{ac();startMusic();},{once:true});
 if(qw||location.hash==="#gallery"){ const sp=$("splash"); if(sp) sp.remove(); }
+if(new URLSearchParams(location.search).get("ov")==="quests"){ renderQuests(); showOverlay("questOv"); }
 
 /* sprite QA gallery: open with #gallery */
 if(location.hash==="#gallery"){
