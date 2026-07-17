@@ -1,0 +1,12 @@
+{
+  "appId": "com.zorzetto.meteopark",
+  "appName": "Meteo Park",
+  "webDir": "www",
+  "backgroundColor": "#3fadf0",
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}

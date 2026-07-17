@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Meteo Park</title>
+<style>
+:root{
+  --ink:#26405c;
+  --ink-soft:#5a7290;
+  --panel:rgba(255,255,255,.82);
+  --panel-solid:#ffffff;
+  --chip:rgba(255,255,255,.92);
+  --hill1:#8fd07c;
+  --hill2:#63b95c;
+  --radius:18px;
+  --display:ui-rounded,"SF Pro Rounded","Hiragino Maru Gothic ProN","Nunito","Quicksand",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  font-family:var(--display);
+  color:var(--ink);
+  overflow:hidden;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+  transition:background 1.4s ease;
+  background:linear-gradient(#4eb5f2 0%,#8ed4fa 55%,#dff3ff 100%);
+}
+body.w-sunny{background:linear-gradient(#3fadf0 0%,#8ed4fa 55%,#eaf8ff 100%)}
+body.w-rain{background:linear-gradient(#5d7d9e 0%,#8aa6bf 55%,#c2d3e0 100%);--hill1:#6fa571;--hill2:#4f8a58}
+body.w-storm{background:linear-gradient(#2c3a52 0%,#48597a 60%,#5c6e8a 100%);--hill1:#47695c;--hill2:#33544a}
+body.w-snow{background:linear-gradient(#8fb9dd 0%,#c3dcef 55%,#eef6fc 100%);--hill1:#eaf4fc;--hill2:#cfe3f3}
+body.w-fog{background:linear-gradient(#8b9ea9 0%,#b4c3cb 55%,#d5dde1 100%);--hill1:#9db3a0;--hill2:#7e9a84}
+body.w-night{background:linear-gradient(#0e1738 0%,#22315e 60%,#33427a 100%);--hill1:#2a416d;--hill2:#1d3054}
+body.w-rainbow{background:linear-gradient(#49b2ef 0%,#9edcfb 50%,#fdf3d8 100%)}
+body.w-storm,body.w-night{--ink:#e8eefb;--ink-soft:#b6c3da}
+
+#hills{position:fixed;bottom:0;left:0;width:100vw;height:16vh;min-height:110px;z-index:0;pointer-events:none}
+.bgcloud{position:fixed;z-index:0;pointer-events:none;opacity:.9;animation:slide linear infinite}
+.bgcloud svg{width:120px;height:auto}
+#cl1{top:6vh;animation-duration:95s}
+#cl2{top:15vh;animation-duration:140s;animation-delay:-60s;transform:scale(.7)}
+@keyframes slide{from{left:-160px}to{left:105vw}}
+body.w-night .bgcloud,body.w-fog .bgcloud{opacity:.25}
+
+#particles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.p-rain{position:absolute;top:-8vh;width:2.5px;height:15px;border-radius:2px;background:linear-gradient(rgba(255,255,255,.05),#cfe9ff);animation:fall linear infinite;transform:rotate(8deg)}
+.p-snow{position:absolute;top:-6vh;border-radius:50%;background:#fff;opacity:.95;filter:blur(.4px);animation:fallsway ease-in-out infinite}
+@keyframes fall{to{transform:rotate(8deg) translateY(120vh)}}
+@keyframes fallsway{0%{transform:translate(0,-4vh)}50%{transform:translate(16px,55vh)}100%{transform:translate(-6px,115vh)}}
+.starp{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 6px 1.5px rgba(255,255,255,.8);animation:twinkle 2.6s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:1}}
+.fogbank{position:absolute;width:150vw;height:24vh;background:rgba(255,255,255,.55);filter:blur(30px);border-radius:50%;animation:drift 17s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translateX(-14vw)}to{transform:translateX(6vw)}}
+.sunfx{position:fixed;top:-90px;right:-90px;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,#fffbd0 0%,rgba(255,224,120,.6) 38%,rgba(255,224,120,0) 70%);animation:breathe 5s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.rbfx{position:fixed;top:2vh;right:-30px;width:220px;height:auto;opacity:.85}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:2}
+body.w-storm #flash{animation:flash 7s infinite}
+@keyframes flash{0%,91%,96%,100%{opacity:0}92.5%,94.5%{opacity:.7}}
+@media (prefers-reduced-motion:reduce){.p-rain,.p-snow,.starp,.fogbank,.bgcloud,.sunfx,body.w-storm #flash{animation:none}}
+
+#app{position:relative;z-index:3;max-width:430px;margin:0 auto;height:100dvh;display:flex;flex-direction:column;padding:10px 12px calc(12px + env(safe-area-inset-bottom));gap:8px}
+header{display:flex;align-items:center;gap:8px}
+.chip{display:flex;align-items:center;gap:6px;background:var(--chip);border-radius:999px;padding:6px 12px;font-weight:800;color:#26405c;box-shadow:0 3px 0 rgba(120,150,190,.35),0 6px 14px rgba(20,40,70,.12);font-size:14px}
+.chip .ico svg,#wIcon svg{width:22px;height:22px;display:block}
+#logo{font-size:15px;letter-spacing:.01em}
+#coinChip{margin-left:auto;font-variant-numeric:tabular-nums}
+#langSel{border:none;font-family:inherit;font-weight:800;font-size:13px;color:#26405c;background:var(--chip);border-radius:999px;padding:7px 8px;box-shadow:0 3px 0 rgba(120,150,190,.35),0 6px 14px rgba(20,40,70,.12)}
+#weatherBar{display:flex;align-items:center;justify-content:center}
+#weatherBar .chip{font-size:15px;padding:5px 14px}
+#hint{background:var(--panel);border-radius:var(--radius);padding:8px 12px;text-align:center;font-size:13.5px;font-weight:700;color:#41618a;box-shadow:0 3px 0 rgba(120,150,190,.3),0 5px 12px rgba(20,40,70,.10)}
+
+#boardWrap{flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+#board{
+  background:var(--panel);
+  border:3px solid rgba(255,255,255,.85);
+  border-radius:24px;
+  box-shadow:0 6px 0 rgba(110,145,190,.35),0 16px 36px rgba(20,40,70,.22);
+  display:grid;grid-template-columns:repeat(6,1fr);grid-template-rows:repeat(6,1fr);
+  gap:5px;padding:9px;touch-action:none;
+}
+.cell{background:rgba(116,160,210,.13);box-shadow:inset 0 2px 4px rgba(90,130,180,.14);border-radius:13px;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer;padding:5%}
+.cell svg{width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 2px 2px rgba(30,60,110,.18))}
+.cell.src{opacity:.35}
+.cell.creature{animation:bounce .9s ease-in-out infinite}
+.cell.creature svg{filter:drop-shadow(0 0 8px rgba(255,214,90,.95))}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.cell.pop{animation:pop .32s ease}
+@keyframes pop{0%{transform:scale(.5)}65%{transform:scale(1.16)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.cell.creature,.cell.pop{animation:none}}
+#ghost{position:fixed;pointer-events:none;width:62px;height:62px;z-index:50;transform:translate(-50%,-62%) scale(1.12);display:none;filter:drop-shadow(0 6px 8px rgba(20,40,70,.3))}
+#ghost svg{width:100%;height:100%}
+
+#controls{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.btn{position:relative;border:none;font-family:inherit;font-weight:800;font-size:11px;color:#31517a;background:linear-gradient(#ffffff,#e9f1fa);border-radius:17px;padding:9px 4px 8px;box-shadow:0 4px 0 #b9cbe0,0 8px 16px rgba(20,40,70,.16);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.btn .ico{height:24px;display:flex;align-items:center}
+.btn .ico svg{width:27px;height:24px}
+.qdot{position:absolute;top:4px;right:7px;width:11px;height:11px;border-radius:50%;background:#ff5f7e;box-shadow:0 0 0 2.5px #fff;display:none}
+.qdot.show{display:block}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b9cbe0,0 3px 8px rgba(20,40,70,.16)}
+.btn:disabled{opacity:.5}
+.btn:focus-visible,#langSel:focus-visible{outline:3px solid #ffb84d;outline-offset:2px}
+#cloudBtn{background:linear-gradient(#f2faff,#cfe9fd);box-shadow:0 4px 0 #93bede,0 8px 16px rgba(20,40,70,.16)}
+#cloudBtn:active{box-shadow:0 1px 0 #93bede,0 3px 8px rgba(20,40,70,.16)}
+#adBtn{background:linear-gradient(#ffe9b0,#ffc65c);color:#7a4a00;box-shadow:0 4px 0 #d99b2b,0 8px 16px rgba(20,40,70,.16)}
+#adBtn:active{box-shadow:0 1px 0 #d99b2b,0 3px 8px rgba(20,40,70,.16)}
+
+#toast{position:fixed;left:50%;bottom:116px;transform:translateX(-50%);background:rgba(38,64,92,.94);color:#fff;font-weight:800;font-size:14px;padding:9px 16px;border-radius:999px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:60;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
+#toast.show{opacity:1}
+.fx-float{position:fixed;z-index:55;font-weight:900;font-size:17px;color:#fff;text-shadow:0 2px 6px rgba(20,40,70,.55);pointer-events:none;animation:floatUp 1s ease-out forwards}
+@keyframes floatUp{from{opacity:1;transform:translate(-50%,-50%)}to{opacity:0;transform:translate(-50%,-160%)}}
+.conf{position:fixed;z-index:55;width:8px;height:8px;border-radius:50%;pointer-events:none;animation:confb .75s ease-out forwards}
+@keyframes confb{from{opacity:1;transform:translate(0,0) scale(1)}to{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.4)}}
+@media (prefers-reduced-motion:reduce){.fx-float,.conf{animation-duration:.01s}}
+
+.overlay{position:fixed;inset:0;background:rgba(20,35,60,.45);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.overlay.show{display:flex}
+.sheet{background:#fdfdfb;color:#26405c;width:100%;max-width:430px;max-height:78dvh;border-radius:26px 26px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));overflow-y:auto;box-shadow:0 -10px 40px rgba(10,25,50,.35)}
+.sheet h2{font-size:18px;margin-bottom:12px;text-align:center}
+.dexgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dexcard{background:#f2f6fb;border-radius:16px;padding:10px 6px;text-align:center;box-shadow:inset 0 2px 4px rgba(90,130,180,.10)}
+.dexcard .de{height:52px;display:flex;align-items:center;justify-content:center}
+.dexcard .de svg{width:50px;height:50px}
+.dexcard .dn{font-weight:800;font-size:12.5px;margin-top:3px}
+.dexcard .dr{display:flex;align-items:center;justify-content:center;gap:3px;font-size:10.5px;color:#7a8ba3;letter-spacing:.04em;text-transform:uppercase;margin-top:1px}
+.dexcard .dr svg{width:13px;height:13px}
+.dexcard .dc{font-size:11px;font-weight:800;color:#3fae6a;margin-top:1px}
+.dexcard.locked{opacity:.5;filter:grayscale(1)}
+.wgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.wbtn{border:none;font-family:inherit;background:#f2f6fb;border-radius:16px;padding:10px 4px 8px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 3px 0 #d4dfec}
+.wbtn svg{width:34px;height:34px}
+.wbtn small{font-size:10.5px;font-weight:800;color:#41618a}
+.wbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #d4dfec}
+.sheetbtn{width:100%;border:none;font-family:inherit;font-weight:800;font-size:14px;border-radius:15px;padding:12px;margin-top:8px;cursor:pointer}
+#realBtn{background:#dcefff;color:#1e5b8a;box-shadow:0 3px 0 #a8cbe8}
+.closebtn{background:#eceff4;color:#5a7290;box-shadow:0 3px 0 #ccd4de}
+.sheetbtn:active{transform:translateY(2px);box-shadow:none}
+.qcard{display:flex;align-items:center;gap:10px;background:#f2f6fb;border-radius:16px;padding:10px 12px;margin-bottom:8px}
+.qicon{flex:none;width:42px;height:42px}
+.qicon svg{width:100%;height:100%}
+.qmid{flex:1;min-width:0}
+.qtext{font-size:12.5px;font-weight:800}
+.qbar{height:8px;background:#dde6f0;border-radius:99px;margin-top:6px;overflow:hidden}
+.qfill{height:100%;background:linear-gradient(90deg,#8ce99a,#3fae6a);border-radius:99px;transition:width .4s}
+.qgo{border:none;font-family:inherit;font-weight:800;background:linear-gradient(#ffe9b0,#ffc65c);color:#7a4a00;border-radius:12px;padding:9px 13px;font-size:12.5px;box-shadow:0 3px 0 #d99b2b;cursor:pointer;flex:none}
+.qgo:active{transform:translateY(2px);box-shadow:none}
+.qdone{font-weight:900;color:#3fae6a;font-size:20px;flex:none;padding:0 8px}
+.qrew{display:flex;align-items:center;gap:4px;font-weight:800;font-size:12.5px;color:#b8860b;flex:none}
+.qrew svg{width:17px;height:17px}
+
+button.chip{border:none;cursor:pointer;font-family:inherit}
+button.chip:active{transform:scale(.92)}
+#muteBtn{padding:6px 8px}
+
+#park{position:relative;height:60px;flex:none;border-radius:16px;background:linear-gradient(#b8e69b,#7cc46a);box-shadow:inset 0 3px 6px rgba(60,120,60,.25),0 3px 0 rgba(90,150,90,.4);overflow:hidden}
+#parkMsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#3f7a38;padding:0 14px;text-align:center}
+.pcr{position:absolute;bottom:2px;width:46px;height:46px;transition:left 2.8s ease-in-out;cursor:pointer;animation:bob 1.7s ease-in-out infinite}
+.pcr svg{width:100%;height:100%;pointer-events:none}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+.heart{color:#ff6b9d;font-size:16px;text-shadow:0 1px 4px rgba(200,40,90,.4)}
+
+#board.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translate(0,0)}20%{transform:translate(-5px,2px)}40%{transform:translate(4px,-3px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
+
+#splash{position:fixed;inset:0;z-index:200;background:linear-gradient(#3fadf0 0%,#a5ddfb 60%,#eaf8ff 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity .7s;cursor:pointer}
+#splash.hide{opacity:0;pointer-events:none}
+#sunArt{position:relative;width:150px;height:150px}
+#sunArt svg{position:absolute;inset:0;width:100%;height:100%}
+#sunArt .rays{animation:spin 26s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#splashCloud{position:absolute;top:15%;left:8%;width:110px;opacity:.9}
+#splashCloud2{position:absolute;bottom:18%;right:6%;width:80px;opacity:.7}
+#splashTitle{display:flex;font-size:43px;font-weight:900;color:#fff;text-shadow:0 4px 0 rgba(40,90,140,.35),0 8px 24px rgba(20,60,110,.35);letter-spacing:.02em}
+#splashTitle span{animation:ltr 1.5s ease-in-out infinite alternate}
+@keyframes ltr{from{transform:translateY(0)}to{transform:translateY(-9px)}}
+#splashTap{font-weight:800;font-size:15px;color:#2c5a86;background:rgba(255,255,255,.88);padding:11px 24px;border-radius:999px;box-shadow:0 4px 0 rgba(120,150,190,.4);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@media (prefers-reduced-motion:reduce){#sunArt .rays,#splashTitle span,#splashTap,.pcr,#board.shake{animation:none}}
+
+#gallery{position:fixed;inset:0;z-index:100;background:#f4f8fc;overflow:auto;display:none;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;align-content:start}
+#gallery.show{display:grid}
+#gallery .gi{background:#fff;border-radius:14px;padding:8px;text-align:center;font-size:10px;font-weight:700;color:#5a7290}
+#gallery .gi svg{width:100%;height:auto}
+</style>
+</head>
+<body>
+<svg id="hills" viewBox="0 0 430 120" preserveAspectRatio="none" aria-hidden="true">
+  <path d="M0 66 Q90 24 190 58 T430 48 L430 120 L0 120 Z" fill="var(--hill2)"/>
+  <circle cx="70" cy="66" r="14" fill="var(--hill2)"/>
+  <circle cx="352" cy="56" r="16" fill="var(--hill2)"/>
+  <path d="M0 92 Q120 56 250 84 T430 78 L430 120 L0 120 Z" fill="var(--hill1)"/>
+  <circle cx="150" cy="90" r="11" fill="var(--hill2)" opacity=".55"/>
+  <circle cx="298" cy="86" r="9" fill="var(--hill2)" opacity=".55"/>
+</svg>
+<div class="bgcloud" id="cl1"></div>
+<div class="bgcloud" id="cl2"></div>
+<div id="particles"></div>
+<div id="flash"></div>
+
+<div id="app">
+  <header>
+    <span class="chip" id="logo"><span class="ico" id="logoIco"></span>Meteo Park</span>
+    <span class="chip" id="coinChip"><span class="ico" id="coinIco"></span><span id="coinVal">0</span></span>
+    <button class="chip" id="muteBtn" aria-label="Sound on/off"><span class="ico" id="muteIco"></span></button>
+    <select id="langSel" aria-label="Language"></select>
+  </header>
+  <div id="weatherBar"><span class="chip"><span id="wIcon"></span><span id="wName"></span></span></div>
+  <div id="hint"></div>
+  <div id="boardWrap"><div id="board"></div></div>
+  <div id="park"><span id="parkMsg"></span></div>
+  <div id="controls">
+    <button class="btn" id="cloudBtn"><span class="ico" id="cloudIco"></span><span id="cloudLbl"></span></button>
+    <button class="btn" id="dexBtn"><span class="ico" id="dexIco"></span><span>Meteodex</span></button>
+    <button class="btn" id="balloonBtn"><span class="ico" id="balloonIco"></span><span id="balloonLbl"></span></button>
+    <button class="btn" id="questBtn"><span class="ico" id="questIco"></span><span id="questLbl"></span><span class="qdot" id="qdot"></span></button>
+    <button class="btn" id="adBtn"><span class="ico" id="adIco"></span><span id="adLbl"></span></button>
+  </div>
+</div>
+
+<div id="ghost"></div>
+<div id="toast"></div>
+<div id="gallery"></div>
+
+<div id="splash">
+  <div id="splashCloud"></div>
+  <div id="splashCloud2"></div>
+  <div id="sunArt"></div>
+  <h1 id="splashTitle"></h1>
+  <div id="splashTap"></div>
+</div>
+
+<div class="overlay" id="dexOv"><div class="sheet">
+  <h2 id="dexTitle">📔 Meteodex</h2>
+  <div class="dexgrid" id="dexGrid"></div>
+  <button class="sheetbtn closebtn" data-close="dexOv"></button>
+</div></div>
+
+<div class="overlay" id="questOv"><div class="sheet">
+  <h2 id="questTitle"></h2>
+  <div id="questList"></div>
+  <button class="sheetbtn closebtn" data-close="questOv"></button>
+</div></div>
+
+<div class="overlay" id="balloonOv"><div class="sheet">
+  <h2 id="balloonTitle"></h2>
+  <div class="wgrid" id="wGrid"></div>
+  <button class="sheetbtn" id="realBtn"></button>
+  <button class="sheetbtn closebtn" data-close="balloonOv"></button>
+</div></div>
+
+<script>
+"use strict";
+/* ---------------- i18n ---------------- */
+const LANGS = {en:"🇬🇧 EN",it:"🇮🇹 IT",es:"🇪🇸 ES",fr:"🇫🇷 FR",de:"🇩🇪 DE",pt:"🇧🇷 PT",ja:"🇯🇵 日本語",ko:"🇰🇷 한국어",zh:"🇨🇳 中文",ru:"🇷🇺 РУ"};
+const I18N = {
+en:{tutorial:"Drag two identical items together to merge them!",cloud:"Seeds",cloudHint:"Tap the cloud to get new items",newCreature:"A creature appeared! Tap it!",boardFull:"The park is full! Merge something first.",balloons:"Balloons",balloonTitle:"🎈 Weather Balloons (demo)",real:"📍 Use my real weather",realFail:"Real weather unavailable — demo mode",realOn:"Real weather active!",ad:"+50 (demo ad)",adDone:"+50 Thanks for watching!",tap:"Tap to play!",parkEmpty:"Caught Meteolings will stroll here!",qTitle:"Daily Missions",qClaim:"Claim",qMerge:"Make {n} merges",qCatch:"Catch {n} creatures",qPet:"Pet creatures {n} times",qMax:"Create a max-level item",qb:"Quests",close:"Close",rarity:["Common","Rare","Epic","Legendary"],weather:{sunny:"Sunny",rain:"Rain",storm:"Storm",snow:"Snow",fog:"Fog",night:"Night",rainbow:"Rainbow"}},
+it:{tutorial:"Trascina due oggetti uguali per unirli!",cloud:"Semi",cloudHint:"Tocca la nuvola per nuovi oggetti",newCreature:"È apparsa una creatura! Toccala!",boardFull:"Il parco è pieno! Prima unisci qualcosa.",balloons:"Palloni",balloonTitle:"🎈 Palloni Meteo (demo)",real:"📍 Usa il mio meteo reale",realFail:"Meteo reale non disponibile — modalità demo",realOn:"Meteo reale attivo!",ad:"+50 (spot demo)",adDone:"+50 Grazie della visione!",tap:"Tocca per giocare!",parkEmpty:"I Meteolini catturati passeggeranno qui!",qTitle:"Missioni del giorno",qClaim:"Riscuoti",qMerge:"Fai {n} fusioni",qCatch:"Cattura {n} creature",qPet:"Accarezza {n} volte le creature",qMax:"Crea un oggetto di livello massimo",qb:"Missioni",close:"Chiudi",rarity:["Comune","Rara","Epica","Leggendaria"],weather:{sunny:"Sole",rain:"Pioggia",storm:"Temporale",snow:"Neve",fog:"Nebbia",night:"Notte",rainbow:"Arcobaleno"}},
+es:{tutorial:"¡Arrastra dos objetos iguales para fusionarlos!",cloud:"Semillas",cloudHint:"Toca la nube para obtener objetos",newCreature:"¡Apareció una criatura! ¡Tócala!",boardFull:"¡El parque está lleno! Fusiona algo primero.",balloons:"Globos",balloonTitle:"🎈 Globos del tiempo (demo)",real:"📍 Usar mi clima real",realFail:"Clima real no disponible — modo demo",realOn:"¡Clima real activo!",ad:"+50 (anuncio demo)",adDone:"+50 ¡Gracias por ver!",tap:"¡Toca para jugar!",parkEmpty:"¡Las criaturas capturadas pasearán aquí!",qTitle:"Misiones diarias",qClaim:"Reclamar",qMerge:"Haz {n} fusiones",qCatch:"Atrapa {n} criaturas",qPet:"Acaricia {n} veces a las criaturas",qMax:"Crea un objeto de nivel máximo",qb:"Misiones",close:"Cerrar",rarity:["Común","Rara","Épica","Legendaria"],weather:{sunny:"Sol",rain:"Lluvia",storm:"Tormenta",snow:"Nieve",fog:"Niebla",night:"Noche",rainbow:"Arcoíris"}},
+fr:{tutorial:"Fais glisser deux objets identiques pour les fusionner !",cloud:"Graines",cloudHint:"Touche le nuage pour des objets",newCreature:"Une créature est apparue ! Touche-la !",boardFull:"Le parc est plein ! Fusionne d'abord quelque chose.",balloons:"Ballons",balloonTitle:"🎈 Ballons météo (démo)",real:"📍 Utiliser ma vraie météo",realFail:"Météo réelle indisponible — mode démo",realOn:"Météo réelle active !",ad:"+50 (pub démo)",adDone:"+50 Merci d'avoir regardé !",tap:"Touche pour jouer !",parkEmpty:"Les créatures capturées se promèneront ici !",qTitle:"Missions du jour",qClaim:"Récupérer",qMerge:"Fais {n} fusions",qCatch:"Attrape {n} créatures",qPet:"Caresse {n} fois les créatures",qMax:"Crée un objet de niveau max",qb:"Missions",close:"Fermer",rarity:["Commune","Rare","Épique","Légendaire"],weather:{sunny:"Soleil",rain:"Pluie",storm:"Orage",snow:"Neige",fog:"Brouillard",night:"Nuit",rainbow:"Arc-en-ciel"}},
+de:{tutorial:"Ziehe zwei gleiche Objekte zusammen, um sie zu verschmelzen!",cloud:"Samen",cloudHint:"Tippe auf die Wolke für neue Objekte",newCreature:"Eine Kreatur ist erschienen! Tippe sie an!",boardFull:"Der Park ist voll! Verschmilz zuerst etwas.",balloons:"Ballons",balloonTitle:"🎈 Wetterballons (Demo)",real:"📍 Mein echtes Wetter nutzen",realFail:"Echtes Wetter nicht verfügbar — Demomodus",realOn:"Echtes Wetter aktiv!",ad:"+50 (Demo-Werbung)",adDone:"+50 Danke fürs Zuschauen!",tap:"Tippen zum Spielen!",parkEmpty:"Gefangene Kreaturen spazieren hier!",qTitle:"Tägliche Aufgaben",qClaim:"Abholen",qMerge:"Mache {n} Fusionen",qCatch:"Fange {n} Kreaturen",qPet:"Streichle {n}-mal Kreaturen",qMax:"Erstelle ein Max-Level-Objekt",qb:"Aufgaben",close:"Schließen",rarity:["Gewöhnlich","Selten","Episch","Legendär"],weather:{sunny:"Sonnig",rain:"Regen",storm:"Gewitter",snow:"Schnee",fog:"Nebel",night:"Nacht",rainbow:"Regenbogen"}},
+pt:{tutorial:"Arraste dois itens iguais para fundi-los!",cloud:"Sementes",cloudHint:"Toque na nuvem para novos itens",newCreature:"Uma criatura apareceu! Toque nela!",boardFull:"O parque está cheio! Funda algo primeiro.",balloons:"Balões",balloonTitle:"🎈 Balões do tempo (demo)",real:"📍 Usar meu clima real",realFail:"Clima real indisponível — modo demo",realOn:"Clima real ativo!",ad:"+50 (anúncio demo)",adDone:"+50 Obrigado por assistir!",tap:"Toque para jogar!",parkEmpty:"As criaturas capturadas passearão aqui!",qTitle:"Missões diárias",qClaim:"Resgatar",qMerge:"Faça {n} fusões",qCatch:"Capture {n} criaturas",qPet:"Acaricie as criaturas {n} vezes",qMax:"Crie um item de nível máximo",qb:"Missões",close:"Fechar",rarity:["Comum","Rara","Épica","Lendária"],weather:{sunny:"Sol",rain:"Chuva",storm:"Tempestade",snow:"Neve",fog:"Névoa",night:"Noite",rainbow:"Arco-íris"}},
+ja:{tutorial:"同じアイテムを重ねて合成しよう!",cloud:"タネ",cloudHint:"雲をタップしてアイテムをゲット",newCreature:"生き物があらわれた!タップ!",boardFull:"パークがいっぱい!まず合成しよう。",balloons:"バルーン",balloonTitle:"🎈 お天気バルーン(デモ)",real:"📍 本当の天気を使う",realFail:"天気を取得できません — デモモード",realOn:"実際の天気を使用中!",ad:"+50(デモ広告)",adDone:"+50 視聴ありがとう!",tap:"タップしてスタート!",parkEmpty:"つかまえた生き物がここをお散歩!",qTitle:"デイリーミッション",qClaim:"うけとる",qMerge:"{n}回合成する",qCatch:"生き物を{n}匹つかまえる",qPet:"生き物を{n}回なでる",qMax:"最大レベルのアイテムを作る",qb:"ミッション",close:"閉じる",rarity:["ノーマル","レア","エピック","レジェンド"],weather:{sunny:"晴れ",rain:"雨",storm:"雷雨",snow:"雪",fog:"霧",night:"夜",rainbow:"虹"}},
+ko:{tutorial:"같은 아이템 두 개를 합쳐 보세요!",cloud:"씨앗",cloudHint:"구름을 눌러 아이템을 받으세요",newCreature:"생물이 나타났어요! 눌러 보세요!",boardFull:"공원이 가득 찼어요! 먼저 합성하세요.",balloons:"풍선",balloonTitle:"🎈 날씨 풍선(데모)",real:"📍 실제 날씨 사용",realFail:"실제 날씨 사용 불가 — 데모 모드",realOn:"실제 날씨 사용 중!",ad:"+50 (데모 광고)",adDone:"+50 시청 감사합니다!",tap:"눌러서 시작!",parkEmpty:"잡은 생물들이 여기서 산책해요!",qTitle:"일일 미션",qClaim:"받기",qMerge:"{n}번 합성하기",qCatch:"생물 {n}마리 잡기",qPet:"생물 {n}번 쓰다듬기",qMax:"최대 레벨 아이템 만들기",qb:"미션",close:"닫기",rarity:["일반","희귀","에픽","전설"],weather:{sunny:"맑음",rain:"비",storm:"폭풍",snow:"눈",fog:"안개",night:"밤",rainbow:"무지개"}},
+zh:{tutorial:"拖动两个相同的物品进行合成!",cloud:"种子",cloudHint:"点击云朵获得新物品",newCreature:"出现了一只生物!点它!",boardFull:"公园满了!先合成一些物品。",balloons:"气球",balloonTitle:"🎈 天气气球(演示)",real:"📍 使用真实天气",realFail:"无法获取真实天气 — 演示模式",realOn:"正在使用真实天气!",ad:"+50(演示广告)",adDone:"+50 感谢观看!",tap:"点击开始!",parkEmpty:"抓到的生物会在这里散步!",qTitle:"每日任务",qClaim:"领取",qMerge:"合成{n}次",qCatch:"抓住{n}只生物",qPet:"抚摸生物{n}次",qMax:"制作一个满级物品",qb:"任务",close:"关闭",rarity:["普通","稀有","史诗","传说"],weather:{sunny:"晴天",rain:"雨",storm:"雷暴",snow:"雪",fog:"雾",night:"夜晚",rainbow:"彩虹"}},
+ru:{tutorial:"Перетащите два одинаковых предмета, чтобы объединить их!",cloud:"Семена",cloudHint:"Нажмите на облако, чтобы получить предметы",newCreature:"Появилось существо! Нажмите на него!",boardFull:"Парк переполнен! Сначала объедините предметы.",balloons:"Шары",balloonTitle:"🎈 Метеошары (демо)",real:"📍 Использовать мою погоду",realFail:"Погода недоступна — демо-режим",realOn:"Реальная погода активна!",ad:"+50 (демо-реклама)",adDone:"+50 Спасибо за просмотр!",tap:"Нажмите, чтобы играть!",parkEmpty:"Пойманные существа будут гулять здесь!",qTitle:"Ежедневные задания",qClaim:"Забрать",qMerge:"Сделайте {n} слияний",qCatch:"Поймайте {n} существ",qPet:"Погладьте существ {n} раз",qMax:"Создайте предмет макс. уровня",qb:"Задания",close:"Закрыть",rarity:["Обычная","Редкая","Эпическая","Легендарная"],weather:{sunny:"Солнечно",rain:"Дождь",storm:"Гроза",snow:"Снег",fog:"Туман",night:"Ночь",rainbow:"Радуга"}}
+};
+
+/* ---------------- SVG sprite library ---------------- */
+const S = inner => `<svg viewBox="0 0 100 100" aria-hidden="true">${inner}</svg>`;
+const lg = (id,c1,c2) => `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`;
+const rg = (id,c1,c2) => `<radialGradient id="${id}"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}" stop-opacity="0"/></radialGradient>`;
+const sh = (rx=20) => `<ellipse cx="50" cy="90" rx="${rx}" ry="5.5" fill="rgba(30,60,110,.16)"/>`;
+const dropP = (cx,cy,s) => `M${cx} ${cy-10*s} C${cx+4*s} ${cy-4*s} ${cx+7*s} ${cy-1*s} ${cx+7*s} ${cy+3*s} A${7*s} ${7*s} 0 0 1 ${cx-7*s} ${cy+3*s} C${cx-7*s} ${cy-1*s} ${cx-4*s} ${cy-4*s} ${cx} ${cy-10*s} Z`;
+function starPts(cx,cy,ro,ri,n=5,rot=-Math.PI/2){
+  const p=[];
+  for(let i=0;i<n*2;i++){
+    const r=i%2?ri:ro, a=rot+Math.PI*i/n;
+    p.push((cx+r*Math.cos(a)).toFixed(1)+","+(cy+r*Math.sin(a)).toFixed(1));
+  }
+  return p.join(" ");
+}
+function rays(n,inner,len,w,color){
+  let out="";
+  for(let i=0;i<n;i++) out+=`<rect x="${50-w/2}" y="${50-inner-len}" width="${w}" height="${len}" rx="${w/2}" fill="${color}" transform="rotate(${i*360/n} 50 50)"/>`;
+  return out;
+}
+const eyes = (y=50,dx=10,r=3.4) => `<circle cx="${50-dx}" cy="${y}" r="${r}" fill="#2b2b3a"/><circle cx="${50+dx}" cy="${y}" r="${r}" fill="#2b2b3a"/><circle cx="${50-dx+1.2}" cy="${y-1.2}" r="1.1" fill="#fff"/><circle cx="${50+dx+1.2}" cy="${y-1.2}" r="1.1" fill="#fff"/>`;
+const blush = (y=58,dx=17,r=4) => `<circle cx="${50-dx}" cy="${y}" r="${r}" fill="#ff9d9d" opacity=".5"/><circle cx="${50+dx}" cy="${y}" r="${r}" fill="#ff9d9d" opacity=".5"/>`;
+const smile = (y=58,w=5) => `<path d="M${50-w} ${y} Q50 ${y+4.5} ${50+w} ${y}" stroke="#2b2b3a" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+const cloudShape = (fill,op=1) => `<g fill="${fill}" opacity="${op}"><ellipse cx="38" cy="52" rx="20" ry="15"/><ellipse cx="60" cy="46" rx="17" ry="14"/><ellipse cx="52" cy="58" rx="27" ry="14"/></g>`;
+
+const ITEMS = {
+water:[
+ S(`<defs>${lg("wa0","#9adcff","#2f96e0")}</defs>${sh(16)}<path d="${dropP(50,56,3.4)}" fill="url(#wa0)"/><ellipse cx="41" cy="52" rx="6" ry="10" fill="#fff" opacity=".55" transform="rotate(-16 41 52)"/>`),
+ S(`<defs>${lg("wa1","#8ed4ff","#2f8ed6")}</defs><ellipse cx="50" cy="70" rx="30" ry="13" fill="url(#wa1)"/><ellipse cx="47" cy="68" rx="19" ry="7" fill="#c9ecff" opacity=".8"/><path d="${dropP(30,40,1.1)}" fill="#5cb9f2"/><path d="${dropP(55,30,1.4)}" fill="#5cb9f2"/><path d="${dropP(71,44,1)}" fill="#5cb9f2"/>`),
+ S(`<defs>${lg("wa2","#7fcdf9","#2b7fc9")}</defs><path d="M22 62 Q18 46 27 42 Q23 55 28 60 Z" fill="#5aa946"/><path d="M78 62 Q84 48 76 42 Q79 54 73 60 Z" fill="#5aa946"/><ellipse cx="50" cy="64" rx="32" ry="15" fill="url(#wa2)"/><ellipse cx="46" cy="61" rx="17" ry="6" fill="#bfe7ff" opacity=".75"/><line x1="70" y1="58" x2="70" y2="34" stroke="#4c9a52" stroke-width="3" stroke-linecap="round"/><ellipse cx="70" cy="30" rx="4.5" ry="8" fill="#8a5a3b"/>`),
+ S(`<defs>${lg("wa3","#6cc4f7","#1e6db4")}</defs><ellipse cx="50" cy="62" rx="37" ry="19" fill="url(#wa3)"/><ellipse cx="44" cy="57" rx="20" ry="7" fill="#b5e3ff" opacity=".7"/><circle cx="34" cy="64" r="8.5" fill="#67c05f"/><path d="M34 64 L44 60 L42 68 Z" fill="url(#wa3)"/><circle cx="63" cy="55" r="3.2" fill="#ff9ec4"/><circle cx="68" cy="58" r="3.2" fill="#ff9ec4"/><circle cx="65" cy="60" r="3.2" fill="#ff9ec4"/><circle cx="65.3" cy="57.7" r="2" fill="#fff"/><polygon points="${starPts(78,42,4,1.6,4)}" fill="#fff" opacity=".9"/><polygon points="${starPts(26,44,3,1.2,4)}" fill="#fff" opacity=".8"/>`)
+],
+plant:[
+ S(`<defs>${lg("pl0","#a8e063","#56ab2f")}</defs>${sh(13)}<ellipse cx="50" cy="80" rx="14" ry="5" fill="#a9744b"/><path d="M50 79 Q50 64 50 54" stroke="#5aa946" stroke-width="4" stroke-linecap="round" fill="none"/><ellipse cx="37" cy="49" rx="12" ry="6.5" fill="url(#pl0)" transform="rotate(-32 37 49)"/><ellipse cx="63" cy="49" rx="12" ry="6.5" fill="url(#pl0)" transform="rotate(32 63 49)"/><circle cx="50" cy="50" r="4.5" fill="#8ed17a"/>`),
+ S(`<defs>${lg("pl1","#9fdc6a","#4d9e33")}</defs>${sh(20)}<circle cx="36" cy="62" r="16" fill="url(#pl1)"/><circle cx="64" cy="62" r="16" fill="url(#pl1)"/><circle cx="50" cy="50" r="19" fill="url(#pl1)"/><circle cx="42" cy="58" r="3" fill="#ff5f7e"/><circle cx="60" cy="64" r="3" fill="#ff5f7e"/><circle cx="52" cy="44" r="3" fill="#ff5f7e"/><ellipse cx="44" cy="42" rx="6" ry="3.5" fill="#d2f2b0" opacity=".8" transform="rotate(-20 44 42)"/>`),
+ S(`<defs>${lg("pl2","#9fdc6a","#4d9e33")}${lg("pot2","#e78a5a","#c0602f")}</defs>${sh(17)}<path d="M50 58 Q50 44 50 36" stroke="#5aa946" stroke-width="3.5" stroke-linecap="round" fill="none"/><ellipse cx="38" cy="36" rx="11" ry="6" fill="url(#pl2)" transform="rotate(-30 38 36)"/><ellipse cx="62" cy="36" rx="11" ry="6" fill="url(#pl2)" transform="rotate(30 62 36)"/><ellipse cx="50" cy="26" rx="7" ry="10" fill="url(#pl2)"/><path d="M35 60 L65 60 L60 84 L40 84 Z" fill="url(#pot2)"/><rect x="32" y="54" width="36" height="9" rx="4.5" fill="#d0703c"/><ellipse cx="44" cy="68" rx="3" ry="6" fill="#f2a97e" opacity=".6"/>`),
+ S(`<defs>${lg("pl3","#8fd06a","#3f8f2e")}</defs>${sh(24)}<path d="M45 86 L46 58 Q50 53 54 58 L55 86 Z" fill="#8a5a3b"/><circle cx="33" cy="48" r="16" fill="url(#pl3)"/><circle cx="67" cy="48" r="16" fill="url(#pl3)"/><circle cx="50" cy="34" r="18" fill="url(#pl3)"/><circle cx="50" cy="50" r="17" fill="url(#pl3)"/><circle cx="40" cy="42" r="3.4" fill="#ff6b6b"/><circle cx="62" cy="52" r="3.4" fill="#ff6b6b"/><circle cx="52" cy="28" r="3.4" fill="#ff6b6b"/><ellipse cx="42" cy="30" rx="7" ry="4" fill="#d2f2b0" opacity=".8" transform="rotate(-22 42 30)"/>`)
+],
+star:[
+ S(`<defs>${lg("st0","#fff3a6","#ffb200")}</defs><path d="M50 14 Q54 42 86 50 Q54 58 50 86 Q46 58 14 50 Q46 42 50 14 Z" fill="url(#st0)"/><polygon points="${starPts(76,26,5,2,4)}" fill="#ffe27a"/><polygon points="${starPts(26,72,4,1.6,4)}" fill="#ffe27a"/>`),
+ S(`<defs>${lg("st1","#ffe985","#ffa801")}</defs>${sh(17)}<polygon points="${starPts(50,52,33,13.5)}" fill="url(#st1)" stroke="#f29b00" stroke-width="2.5" stroke-linejoin="round"/><ellipse cx="42" cy="42" rx="5" ry="7" fill="#fff" opacity=".5" transform="rotate(-18 42 42)"/>`),
+ S(`<defs>${rg("st2g","#fff2b0","#ffd200")}${lg("st2","#fff2ae","#ff9d00")}</defs><circle cx="50" cy="52" r="36" fill="url(#st2g)"/><polygon points="${starPts(50,52,27,11)}" fill="url(#st2)" stroke="#f29b00" stroke-width="2" stroke-linejoin="round"/><polygon points="${starPts(21,28,5,2,4)}" fill="#ffd76e"/><polygon points="${starPts(80,26,6,2.4,4)}" fill="#ffd76e"/><polygon points="${starPts(79,74,4,1.6,4)}" fill="#ffd76e"/>`),
+ S(`<defs>${rg("st3g","#fff6c4","#ffd76e")}${lg("st3","#ffd54d","#ff9100")}</defs><circle cx="50" cy="50" r="42" fill="url(#st3g)"/>${rays(8,24,12,6,"#ffc93c")}<circle cx="50" cy="50" r="23" fill="url(#st3)"/>${eyes(47,8,2.9)}${smile(54,4)}${blush(53,13,3.2)}`)
+]
+};
+
+const CREATURE_ART = {
+sun1:S(`<defs>${lg("cch","#ffef9e","#ffc93c")}</defs>${sh(17)}<ellipse cx="26" cy="60" rx="7" ry="12" fill="#f6b93b" transform="rotate(18 26 60)"/><ellipse cx="74" cy="60" rx="7" ry="12" fill="#f6b93b" transform="rotate(-18 74 60)"/><circle cx="50" cy="56" r="26" fill="url(#cch)"/><path d="M45 31 Q47 23 51 29 M51 29 Q54 22 57 30" stroke="#f6b93b" stroke-width="2.5" stroke-linecap="round" fill="none"/>${eyes(50,10)}<path d="M45 57 L55 57 L50 64 Z" fill="#ff9f1a"/>${blush(60,18)}`),
+sun2:S(`<defs>${lg("cfx","#ffb066","#ef7d2b")}</defs>${sh(18)}<path d="M29 42 L21 16 L45 31 Z" fill="#ef7d2b"/><path d="M71 42 L79 16 L55 31 Z" fill="#ef7d2b"/><path d="M31 37 L27 23 L42 32 Z" fill="#ffd9b3"/><path d="M69 37 L73 23 L58 32 Z" fill="#ffd9b3"/><circle cx="50" cy="56" r="26" fill="url(#cfx)"/><ellipse cx="50" cy="68" rx="15" ry="11" fill="#fff4e6"/><path d="M35 52 Q39 47 43 52" stroke="#4a2f22" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M57 52 Q61 47 65 52" stroke="#4a2f22" stroke-width="2.6" fill="none" stroke-linecap="round"/><circle cx="50" cy="62" r="3.2" fill="#3a2b2b"/><path d="M46 68 Q50 71 54 68" stroke="#4a2f22" stroke-width="2" fill="none" stroke-linecap="round"/>${blush(60,19)}`),
+rain1:S(`<defs>${lg("cfr","#a8e063","#4d9e33")}</defs>${sh(19)}<circle cx="37" cy="35" r="11" fill="url(#cfr)"/><circle cx="63" cy="35" r="11" fill="url(#cfr)"/><circle cx="37" cy="34" r="7" fill="#fff"/><circle cx="63" cy="34" r="7" fill="#fff"/><circle cx="37" cy="35" r="3.4" fill="#2b2b3a"/><circle cx="63" cy="35" r="3.4" fill="#2b2b3a"/><circle cx="38.2" cy="33.8" r="1.1" fill="#fff"/><circle cx="64.2" cy="33.8" r="1.1" fill="#fff"/><ellipse cx="50" cy="62" rx="28" ry="23" fill="url(#cfr)"/><ellipse cx="50" cy="70" rx="16" ry="11" fill="#eaffd8" opacity=".85"/><path d="M40 60 Q50 68 60 60" stroke="#2b6a1e" stroke-width="2.4" fill="none" stroke-linecap="round"/>${blush(60,20)}<path d="${dropP(79,26,1.1)}" fill="#7fd0ff"/>`),
+rain2:S(`<defs>${lg("cdk","#fffdf2","#ffe9b8")}</defs>${sh(18)}<ellipse cx="50" cy="68" rx="24" ry="16" fill="url(#cdk)"/><ellipse cx="36" cy="68" rx="9" ry="6" fill="#f3ecd8" transform="rotate(-14 36 68)"/><circle cx="50" cy="42" r="17" fill="#ffe36e"/><ellipse cx="50" cy="51" rx="9" ry="4.5" fill="#ff9f1a"/>${eyes(38,7,3)}${blush(45,12,3.4)}<path d="${dropP(66,28,1.2)}" fill="#7fd0ff"/>`),
+storm1:S(`<defs>${lg("chg","#8d6748","#6b4b2e")}${lg("chf","#f6d09a","#e8b877")}</defs>${sh(20)}<polygon points="${starPts(50,54,36,25,10)}" fill="url(#chg)"/><circle cx="50" cy="60" r="19" fill="url(#chf)"/>${eyes(56,8,3)}<circle cx="50" cy="63.5" r="2.4" fill="#5a4030"/><path d="M46 68 Q50 71 54 68" stroke="#5a4030" stroke-width="2" fill="none" stroke-linecap="round"/>${blush(64,14,3.2)}<polygon points="76,12 66,32 72,32 63,50 79,28 72,28" fill="#ffd93b" stroke="#f2a007" stroke-width="1.4" stroke-linejoin="round"/>`),
+snow1:S(`<defs>${lg("cpg","#46536e","#232c42")}</defs>${sh(18)}<ellipse cx="25" cy="62" rx="6" ry="13" fill="#232c42" transform="rotate(16 25 62)"/><ellipse cx="75" cy="62" rx="6" ry="13" fill="#232c42" transform="rotate(-16 75 62)"/><ellipse cx="50" cy="58" rx="24" ry="27" fill="url(#cpg)"/><ellipse cx="50" cy="65" rx="15" ry="17" fill="#fff"/>${eyes(46,9,3.2)}<path d="M46 53 L54 53 L50 59 Z" fill="#ff9f1a"/><path d="M35 40 A16 15 0 0 1 65 40 L64 45 Q50 34 36 45 Z" fill="#4aa3e0"/><circle cx="50" cy="30" r="4.5" fill="#fff"/><ellipse cx="43" cy="86" rx="6" ry="3" fill="#ff9f1a"/><ellipse cx="57" cy="86" rx="6" ry="3" fill="#ff9f1a"/>${blush(52,15,3.4)}`),
+fog1:S(`<defs>${lg("cow","#cbb7e8","#8f7bb8")}</defs>${sh(19)}<path d="M31 34 L26 18 L42 28 Z" fill="#8f7bb8"/><path d="M69 34 L74 18 L58 28 Z" fill="#8f7bb8"/><ellipse cx="50" cy="58" rx="27" ry="27" fill="url(#cow)"/><ellipse cx="30" cy="60" rx="7" ry="14" fill="#7d6aa6" transform="rotate(12 30 60)"/><ellipse cx="70" cy="60" rx="7" ry="14" fill="#7d6aa6" transform="rotate(-12 70 60)"/><circle cx="39" cy="48" r="10.5" fill="#fff"/><circle cx="61" cy="48" r="10.5" fill="#fff"/><circle cx="39" cy="48" r="6" fill="#ffb200"/><circle cx="61" cy="48" r="6" fill="#ffb200"/><circle cx="39" cy="48" r="3" fill="#2b2b3a"/><circle cx="61" cy="48" r="3" fill="#2b2b3a"/><path d="M46 58 L54 58 L50 64 Z" fill="#ff9f1a"/><path d="M42 70 Q50 74 58 70" stroke="#7d6aa6" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M42 76 Q50 80 58 76" stroke="#7d6aa6" stroke-width="2.2" fill="none" stroke-linecap="round"/>`),
+night1:S(`<defs>${lg("cct","#4a5080","#2c3055")}</defs>${sh(18)}<path d="M32 42 L28 20 L47 32 Z" fill="url(#cct)"/><path d="M68 42 L72 20 L53 32 Z" fill="url(#cct)"/><path d="M34 37 L32 27 L43 33 Z" fill="#f7a8c3"/><path d="M66 37 L68 27 L57 33 Z" fill="#f7a8c3"/><circle cx="50" cy="58" r="25" fill="url(#cct)"/><path d="M37 55 Q41 60 45 55" stroke="#ffd76e" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M55 55 Q59 60 63 55" stroke="#ffd76e" stroke-width="2.6" fill="none" stroke-linecap="round"/><path d="M47 64 Q50 67 53 64" stroke="#ffd76e" stroke-width="2" fill="none" stroke-linecap="round"/><line x1="20" y1="58" x2="32" y2="60" stroke="#9aa2c9" stroke-width="1.5" stroke-linecap="round"/><line x1="20" y1="66" x2="32" y2="65" stroke="#9aa2c9" stroke-width="1.5" stroke-linecap="round"/><line x1="80" y1="58" x2="68" y2="60" stroke="#9aa2c9" stroke-width="1.5" stroke-linecap="round"/><line x1="80" y1="66" x2="68" y2="65" stroke="#9aa2c9" stroke-width="1.5" stroke-linecap="round"/><path d="M80 14 A11 11 0 1 0 87 32 A8.5 8.5 0 1 1 80 14 Z" fill="#ffd76e"/>${blush(66,15,3.4)}`),
+rb1:S(`<defs>${lg("cun","#ffffff","#efe7ff")}${lg("cho","#ffe27a","#f5a623")}</defs>${sh(19)}<path d="M52 34 L58 10 L64 35 Z" fill="url(#cho)"/><line x1="54.5" y1="24" x2="61.5" y2="26" stroke="#e8b53a" stroke-width="1.6"/><line x1="53.5" y1="30" x2="62.5" y2="31" stroke="#e8b53a" stroke-width="1.6"/><path d="M34 40 L30 26 L44 34 Z" fill="#fff"/><path d="M36 37 L34 29 L42 34 Z" fill="#f7a8c3"/><path d="M38 36 Q26 48 32 66 Q36 74 42 78" stroke="#ff6b9d" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M43 33 Q32 48 37 66" stroke="#ffc93c" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M48 32 Q38 48 42 62" stroke="#5cd6ff" stroke-width="4" fill="none" stroke-linecap="round"/><circle cx="52" cy="58" r="24" fill="url(#cun)"/><path d="M46 56 Q50 60 54 56" stroke="#6b5b8a" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M62 56 Q66 60 70 56" stroke="#6b5b8a" stroke-width="2.4" fill="none" stroke-linecap="round"/><circle cx="46" cy="66" r="3.4" fill="#ffb3cd" opacity=".7"/><circle cx="68" cy="66" r="3.4" fill="#ffb3cd" opacity=".7"/><path d="M54 68 Q58 71 62 68" stroke="#6b5b8a" stroke-width="2" fill="none" stroke-linecap="round"/><polygon points="${starPts(20,22,5,2,4)}" fill="#ffd76e"/><polygon points="${starPts(84,50,4,1.6,4)}" fill="#5cd6ff"/>`)
+};
+
+const WICONS = {
+sunny:S(`${rays(8,20,11,6,"#ffc93c")}<circle cx="50" cy="50" r="19" fill="#ffb200"/>`),
+rain:S(`${cloudShape("#9fb8cf")}<line x1="36" y1="74" x2="32" y2="86" stroke="#4aa3e0" stroke-width="5" stroke-linecap="round"/><line x1="52" y1="76" x2="48" y2="88" stroke="#4aa3e0" stroke-width="5" stroke-linecap="round"/><line x1="68" y1="74" x2="64" y2="86" stroke="#4aa3e0" stroke-width="5" stroke-linecap="round"/>`),
+storm:S(`${cloudShape("#7a8ca3")}<polygon points="54,64 42,82 51,82 46,96 62,76 53,76" fill="#ffb200"/>`),
+snow:S(`<g stroke="#7fb6e0" stroke-width="6" stroke-linecap="round">${[0,60,120].map(a=>`<line x1="50" y1="18" x2="50" y2="82" transform="rotate(${a} 50 50)"/>`).join("")}</g><circle cx="50" cy="50" r="7" fill="#7fb6e0"/>`),
+fog:S(`<g stroke="#90a4b5" stroke-width="9" stroke-linecap="round"><line x1="24" y1="36" x2="76" y2="36"/><line x1="18" y1="53" x2="70" y2="53"/><line x1="30" y1="70" x2="82" y2="70"/></g>`),
+night:S(`<path d="M60 14 A34 34 0 1 0 78 70 A27 27 0 1 1 60 14 Z" fill="#ffd76e"/><polygon points="${starPts(72,32,7,2.8,4)}" fill="#ffd76e"/>`),
+rainbow:S(`<g fill="none" stroke-linecap="round"><path d="M18 76 A32 32 0 0 1 82 76" stroke="#ff6b6b" stroke-width="8"/><path d="M28 76 A22 22 0 0 1 72 76" stroke="#ffc93c" stroke-width="8"/><path d="M38 76 A12 12 0 0 1 62 76" stroke="#5cd6ff" stroke-width="8"/></g>`)
+};
+
+const UI = {
+logo:S(`<circle cx="38" cy="38" r="17" fill="#ffb200"/>${cloudShape("#fff")}`),
+coin:S(`<defs>${lg("uic","#ffe27a","#f5a623")}</defs><circle cx="50" cy="50" r="38" fill="url(#uic)" stroke="#d98c1a" stroke-width="5"/><circle cx="50" cy="50" r="26" fill="none" stroke="#ffefad" stroke-width="3"/><polygon points="${starPts(50,50,14,5.5,4)}" fill="#fff6d8"/>`),
+cloud:S(`<defs>${lg("uicl","#ffffff","#dcebf8")}</defs>${cloudShape("url(#uicl)")}<circle cx="40" cy="50" r="2.6" fill="#9fb8cf"/><circle cx="52" cy="54" r="2.6" fill="#9fb8cf"/><circle cx="62" cy="48" r="2.6" fill="#9fb8cf"/>`),
+dex:S(`<defs>${lg("uib","#f6a25c","#e0713a")}</defs><rect x="26" y="20" width="48" height="60" rx="7" fill="url(#uib)"/><rect x="26" y="20" width="10" height="60" rx="5" fill="#c05a2b"/><line x1="46" y1="38" x2="66" y2="38" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/><line x1="46" y1="50" x2="66" y2="50" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".6"/><path d="M58 20 L58 36 L64 30 L70 36 L70 20 Z" fill="#ffd76e"/>`),
+balloon:S(`<defs>${lg("uibl","#ff8fa8","#f2445f")}</defs><ellipse cx="50" cy="40" rx="21" ry="25" fill="url(#uibl)"/><ellipse cx="42" cy="32" rx="6" ry="9" fill="#fff" opacity=".5" transform="rotate(-16 42 32)"/><polygon points="46,64 54,64 50,70" fill="#d63652"/><path d="M50 70 Q42 80 50 92" stroke="#b8677a" stroke-width="2.4" fill="none" stroke-linecap="round"/>`),
+ad:S(`<rect x="20" y="28" width="60" height="46" rx="11" fill="#3c4a63"/><polygon points="44,41 64,51 44,61" fill="#fff"/><circle cx="76" cy="28" r="11" fill="#ffd54d" stroke="#d98c1a" stroke-width="3"/>`),
+sndOn:S(`<polygon points="18,38 36,38 54,22 54,78 36,62 18,62" fill="#26405c"/><path d="M62 36 A20 20 0 0 1 62 64" stroke="#26405c" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M70 26 A32 32 0 0 1 70 74" stroke="#26405c" stroke-width="6" fill="none" stroke-linecap="round" opacity=".6"/>`),
+sndOff:S(`<polygon points="18,38 36,38 54,22 54,78 36,62 18,62" fill="#26405c"/><line x1="62" y1="38" x2="82" y2="62" stroke="#e05b6d" stroke-width="7" stroke-linecap="round"/><line x1="82" y1="38" x2="62" y2="62" stroke="#e05b6d" stroke-width="7" stroke-linecap="round"/>`)
+};
+
+/* ---------------- sound engine (WebAudio, no assets) ---------------- */
+let AC=null;
+function ac(){
+  try{
+    if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)();
+    if(AC.state==="suspended") AC.resume();
+    return AC;
+  }catch(e){ return null; }
+}
+function tone(freq,dur,type="sine",vol=0.2,slide=0,delay=0){
+  const a=ac(); if(!a||state.muted) return;
+  const t=a.currentTime+delay;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide),t+dur);
+  g.gain.setValueAtTime(vol,t);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(t); o.stop(t+dur+0.02);
+}
+function noiseS(dur,vol,cutoff,delay=0){
+  const a=ac(); if(!a||state.muted) return;
+  const t=a.currentTime+delay;
+  const len=Math.floor(a.sampleRate*dur), buf=a.createBuffer(1,len,a.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(1-i/len);
+  const src=a.createBufferSource(); src.buffer=buf;
+  const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=cutoff;
+  const g=a.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  src.connect(f); f.connect(g); g.connect(a.destination);
+  src.start(t);
+}
+const snd={
+  pop:l=>tone(280+l*90,0.13,"sine",0.25,130),
+  plip:()=>tone(520,0.09,"sine",0.15,150),
+  coin:()=>{tone(880,0.09,"square",0.1);tone(1320,0.13,"square",0.1,0,0.09);},
+  sparkle:()=>[660,880,1100,1480].forEach((f,i)=>tone(f,0.13,"sine",0.13,0,i*0.07)),
+  chirp:()=>{tone(900,0.08,"triangle",0.17,350);tone(1250,0.1,"triangle",0.15,300,0.1);},
+  catch:()=>{snd.chirp();snd.sparkle();},
+  boom:()=>{noiseS(0.5,0.45,420);tone(140,0.4,"sawtooth",0.18,-60);},
+  thunder:()=>noiseS(1.5,0.4,230),
+  whoosh:()=>noiseS(0.5,0.22,900),
+  click:()=>tone(700,0.05,"sine",0.09)
+};
+
+/* generative background music: gentle chords + pentatonic melody, mood follows the weather */
+const MUSIC={timer:null,bar:0};
+function mnote(f,when,dur,vol,type="triangle"){
+  const a=ac(); if(!a||state.muted) return;
+  const t=a.currentTime+when;
+  const o=a.createOscillator(), g=a.createGain();
+  o.type=type; o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.linearRampToValueAtTime(vol,t+0.08);
+  g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(t); o.stop(t+dur+0.05);
+}
+const CHORDS_DAY=[[130.8,164.8,196],[110,130.8,164.8],[87.3,130.8,174.6],[98,123.5,146.8]];
+const SCALE_DAY=[261.6,293.7,329.6,392,440,523.3];
+const CHORDS_NIGHT=[[110,130.8,164.8],[87.3,110,130.8],[98,116.5,146.8],[82.4,98,123.5]];
+const SCALE_NIGHT=[220,261.6,293.7,329.6,392];
+function playBar(){
+  const night=(weather==="night"||weather==="fog");
+  const calm=night||weather==="rain"||weather==="snow";
+  const chords=night?CHORDS_NIGHT:CHORDS_DAY;
+  const scale=night?SCALE_NIGHT:SCALE_DAY;
+  chords[MUSIC.bar%chords.length].forEach(f=>mnote(f,0.02,2.3,0.045));
+  const notes=calm?2:3;
+  for(let i=0;i<notes;i++){
+    if(Math.random()<0.3) continue;
+    mnote(scale[Math.floor(Math.random()*scale.length)],0.15+i*(2.1/notes),0.55,0.06,"sine");
+  }
+  MUSIC.bar++;
+}
+function startMusic(){
+  if(MUSIC.timer) return;
+  if(!ac()) return;
+  playBar();
+  MUSIC.timer=setInterval(playBar,2400);
+}
+
+/* ---------------- game data ---------------- */
+const CREATURES = [
+ {id:"sun1",w:"sunny",r:0,n:{en:"Sunny",it:"Girasolino",es:"Solecito",fr:"Soleilou",de:"Sonnchen",pt:"Solzinho",ja:"ヒナタ",ko:"햇살이",zh:"阳阳",ru:"Солнышко"}},
+ {id:"sun2",w:"sunny",r:1,n:{en:"Sunfox",it:"Solandro",es:"Zorrosol",fr:"Renasol",de:"Sonnenfuchs",pt:"Raposol",ja:"ヒザシ",ko:"여우빛",zh:"狐阳",ru:"Лисвет"}},
+ {id:"rain1",w:"rain",r:0,n:{en:"Splashy",it:"Tuffolo",es:"Chapotín",fr:"Plouf",de:"Platschi",pt:"Sapinho",ja:"ケロアメ",ko:"개굴비",zh:"蛙雨",ru:"Кваплик"}},
+ {id:"rain2",w:"rain",r:1,n:{en:"Puddles",it:"Gocciolina",es:"Gotita",fr:"Gouttelette",de:"Tröpfchen",pt:"Gotinha",ja:"アメッポ",ko:"빗방울이",zh:"小雨点",ru:"Капелька"}},
+ {id:"storm1",w:"storm",r:2,n:{en:"Zappy",it:"Lampino",es:"Rayito",fr:"Éclairou",de:"Blitzi",pt:"Faísca",ja:"ビリッコ",ko:"번개돌이",zh:"闪闪",ru:"Молник"}},
+ {id:"snow1",w:"snow",r:1,n:{en:"Flurry",it:"Fiocchetto",es:"Copito",fr:"Flocon",de:"Flöckchen",pt:"Floquinho",ja:"ユキッペ",ko:"눈송이",zh:"雪宝",ru:"Снежок"}},
+ {id:"fog1",w:"fog",r:1,n:{en:"Misty",it:"Nebbiolo",es:"Brumita",fr:"Brumeux",de:"Nebelchen",pt:"Neblininha",ja:"キリフク",ko:"안개미",zh:"雾雾",ru:"Туманчик"}},
+ {id:"night1",w:"night",r:1,n:{en:"Moonpaw",it:"Lunetta",es:"Lunita",fr:"Lunou",de:"Mondi",pt:"Luazinha",ja:"ヨルネコ",ko:"달냥이",zh:"月喵",ru:"Ночка"}},
+ {id:"rb1",w:"rainbow",r:3,n:{en:"Iris",it:"Iride",es:"Iris",fr:"Iris",de:"Iris",pt:"Íris",ja:"ニジマル",ko:"무지",zh:"彩彩",ru:"Ирис"}}
+];
+const CHAINS = {water:ITEMS.water,plant:ITEMS.plant,star:ITEMS.star};
+const POOLS = {sunny:["sun1","sun2"],rain:["rain1","rain2"],storm:["rain1","storm1"],snow:["snow1"],fog:["fog1"],night:["night1"],rainbow:["sun1","rb1"]};
+const RARITY_W = [100,30,10,6];
+const CATCH_REWARD = [10,25,60,150];
+const SIZE = 36;
+
+/* ---------------- state ---------------- */
+const $ = id => document.getElementById(id);
+let state = {coins:0, dex:{}, lang:null, board:new Array(SIZE).fill(null), merged:false, muted:false};
+let weather = "sunny", weatherMode = "cycle";
+
+function detectLang(){
+  const nav=(navigator.language||"en").slice(0,2).toLowerCase();
+  return I18N[nav]?nav:"en";
+}
+function t(key){ return I18N[state.lang][key]; }
+function cname(c){ return c.n[state.lang]||c.n.en; }
+
+function save(){
+  try{
+    const b=state.board.map(c=>c?(c.k==="i"?{k:"i",c:c.c,l:c.l}:{k:"c",id:c.id}):null);
+    localStorage.setItem("meteopark",JSON.stringify({coins:state.coins,dex:state.dex,lang:state.lang,board:b,merged:state.merged,muted:state.muted,daily:state.daily}));
+  }catch(e){}
+}
+function load(){
+  try{
+    const s=JSON.parse(localStorage.getItem("meteopark"));
+    if(s){state.coins=s.coins||0;state.dex=s.dex||{};state.lang=s.lang;state.merged=!!s.merged;state.muted=!!s.muted;state.daily=s.daily||null;
+      if(Array.isArray(s.board)&&s.board.length===SIZE) state.board=s.board;}
+  }catch(e){}
+}
+
+/* ---------------- UI text ---------------- */
+function applyLang(){
+  document.documentElement.lang=state.lang;
+  $("cloudLbl").textContent=t("cloud");
+  $("balloonLbl").textContent=t("balloons");
+  $("adLbl").textContent=t("ad");
+  $("hint").textContent=state.merged?t("cloudHint"):t("tutorial");
+  $("balloonTitle").textContent=t("balloonTitle");
+  $("realBtn").textContent=t("real");
+  document.querySelectorAll(".closebtn").forEach(b=>b.textContent=t("close"));
+  $("wName").textContent=t("weather")[weather];
+  $("parkMsg").textContent=t("parkEmpty");
+  $("questLbl").textContent=t("qb");
+  $("questTitle").textContent="📋 "+t("qTitle");
+  const st=$("splashTap"); if(st) st.textContent=t("tap");
+  renderWeatherGrid(); renderDex();
+  if(state.daily) renderQuests();
+  save();
+}
+
+/* ---------------- board ---------------- */
+function buildBoard(){
+  const bd=$("board");
+  for(let i=0;i<SIZE;i++){
+    const c=document.createElement("div");
+    c.className="cell"; c.dataset.idx=i;
+    bd.appendChild(c);
+  }
+  sizeBoard();
+}
+function sizeBoard(){
+  const w=$("boardWrap");
+  const s=Math.max(180,Math.min(w.clientWidth,w.clientHeight,400));
+  const bd=$("board");
+  bd.style.width=s+"px"; bd.style.height=s+"px";
+}
+window.addEventListener("resize",sizeBoard);
+function renderBoard(){
+  document.querySelectorAll("#board .cell").forEach((el,i)=>{
+    const v=state.board[i];
+    el.classList.remove("creature");
+    if(!v){el.innerHTML="";return;}
+    if(v.k==="i"){el.innerHTML=CHAINS[v.c][v.l];}
+    else{el.innerHTML=CREATURE_ART[v.id];el.classList.add("creature");}
+  });
+}
+function emptyCells(){
+  const out=[]; for(let i=0;i<SIZE;i++) if(!state.board[i]) out.push(i); return out;
+}
+function updateCoins(){ $("coinVal").textContent=state.coins; }
+function cellCenter(idx){
+  const el=document.querySelector(`.cell[data-idx="${idx}"]`);
+  if(!el) return {x:innerWidth/2,y:innerHeight/2};
+  const r=el.getBoundingClientRect();
+  return {x:r.left+r.width/2,y:r.top+r.height/2};
+}
+function spawnFloat(x,y,text){
+  const s=document.createElement("span");
+  s.className="fx-float"; s.textContent=text;
+  s.style.left=x+"px"; s.style.top=y+"px";
+  document.body.appendChild(s);
+  setTimeout(()=>s.remove(),1050);
+}
+function confetti(x,y){
+  const colors=["#ff6b9d","#ffc93c","#5cd6ff","#8ce99a","#b197fc"];
+  for(let i=0;i<10;i++){
+    const s=document.createElement("span");
+    s.className="conf";
+    s.style.left=x+"px"; s.style.top=y+"px";
+    s.style.background=colors[i%colors.length];
+    const a=Math.random()*Math.PI*2, d=30+Math.random()*40;
+    s.style.setProperty("--dx",Math.cos(a)*d+"px");
+    s.style.setProperty("--dy",Math.sin(a)*d-20+"px");
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),800);
+  }
+}
+
+function hearts(x,y){
+  for(let i=0;i<3;i++){
+    const s=document.createElement("span");
+    s.className="fx-float heart"; s.textContent="♥";
+    s.style.left=(x+(Math.random()*26-13))+"px";
+    s.style.top=(y-4)+"px";
+    s.style.animationDelay=(i*0.09)+"s";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),1400);
+  }
+}
+
+/* the park strip: caught creatures wander around and can be petted */
+function rebuildPark(){
+  const park=$("park");
+  park.querySelectorAll(".pcr").forEach(e=>e.remove());
+  const ids=Object.keys(state.dex);
+  $("parkMsg").style.display=ids.length?"none":"flex";
+  ids.slice(0,8).forEach(id=>{
+    const s=document.createElement("div");
+    s.className="pcr";
+    s.innerHTML=CREATURE_ART[id];
+    s.style.left=(5+Math.random()*80)+"%";
+    s.addEventListener("pointerdown",e=>{
+      e.stopPropagation();
+      state.coins+=2; updateCoins(); save();
+      snd.chirp();
+      hearts(e.clientX,e.clientY);
+      spawnFloat(e.clientX,e.clientY-24,"+2");
+      questProg("pet");
+    });
+    park.appendChild(s);
+  });
+}
+setInterval(()=>{
+  document.querySelectorAll(".pcr").forEach(el=>{
+    const nl=5+Math.random()*80;
+    const cur=parseFloat(el.style.left)||50;
+    el.querySelector("svg").style.transform=nl<cur?"scaleX(-1)":"";
+    el.style.left=nl+"%";
+  });
+},3200);
+
+let toastTimer=null;
+function toast(msg){
+  const el=$("toast"); el.textContent=msg; el.classList.add("show");
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
+}
+
+/* ---------------- spawning ---------------- */
+function spawnItem(){
+  const empty=emptyCells();
+  if(!empty.length){toast(t("boardFull"));return false;}
+  const idx=empty[Math.floor(Math.random()*empty.length)];
+  const chains=Object.keys(CHAINS);
+  const c=chains[Math.floor(Math.random()*chains.length)];
+  const l=Math.random()<0.82?0:1;
+  state.board[idx]={k:"i",c,l};
+  renderBoard(); popCell(idx); snd.plip(); save();
+  return true;
+}
+function popCell(idx){
+  const el=document.querySelector(`.cell[data-idx="${idx}"]`);
+  if(el){el.classList.remove("pop");void el.offsetWidth;el.classList.add("pop");}
+}
+
+function maybeCreature(mergedLvl,guaranteed){
+  const chance=guaranteed?1:(0.18+0.09*mergedLvl);
+  if(Math.random()>chance) return;
+  const empty=emptyCells(); if(!empty.length) return;
+  const pool=POOLS[weather].map(id=>CREATURES.find(c=>c.id===id));
+  let total=0; pool.forEach(c=>total+=RARITY_W[c.r]);
+  let roll=Math.random()*total, pick=pool[0];
+  for(const c of pool){ roll-=RARITY_W[c.r]; if(roll<=0){pick=c;break;} }
+  const idx=empty[Math.floor(Math.random()*empty.length)];
+  state.board[idx]={k:"c",id:pick.id};
+  renderBoard(); popCell(idx); toast(t("newCreature")); save();
+}
+
+function catchCreature(idx){
+  const v=state.board[idx]; if(!v||v.k!=="c") return;
+  const cr=CREATURES.find(x=>x.id===v.id);
+  const pos=cellCenter(idx);
+  state.board[idx]=null;
+  state.coins+=CATCH_REWARD[cr.r];
+  state.dex[cr.id]=(state.dex[cr.id]||0)+1;
+  updateCoins(); renderBoard(); renderDex(); rebuildPark();
+  confetti(pos.x,pos.y);
+  spawnFloat(pos.x,pos.y,`+${CATCH_REWARD[cr.r]}`);
+  snd.catch();
+  toast(`${cname(cr)}!`);
+  questProg("catch");
+  save();
+}
+
+/* ---------------- drag & merge ---------------- */
+let dragSrc=null, combo=1, lastMerge=0;
+const ghost=$("ghost");
+const boardEl=$("board");
+
+boardEl.addEventListener("pointerdown",ev=>{
+  const cell=ev.target.closest(".cell"); if(!cell) return;
+  const idx=+cell.dataset.idx, v=state.board[idx];
+  if(!v) return;
+  if(v.k==="c"){catchCreature(idx);return;}
+  dragSrc=idx;
+  cell.classList.add("src");
+  ghost.innerHTML=CHAINS[v.c][v.l];
+  ghost.style.display="block";
+  moveGhost(ev);
+});
+document.addEventListener("pointermove",ev=>{
+  if(dragSrc===null) return;
+  ev.preventDefault();
+  moveGhost(ev);
+},{passive:false});
+document.addEventListener("pointerup",ev=>{
+  if(dragSrc===null) return;
+  ghost.style.display="none";
+  const srcEl=document.querySelector(`.cell[data-idx="${dragSrc}"]`);
+  if(srcEl) srcEl.classList.remove("src");
+  const target=document.elementFromPoint(ev.clientX,ev.clientY);
+  const cell=target&&target.closest?target.closest(".cell"):null;
+  const src=dragSrc; dragSrc=null;
+  if(!cell) return;
+  const dst=+cell.dataset.idx;
+  if(dst===src) return;
+  dropItem(src,dst);
+});
+function moveGhost(ev){
+  ghost.style.left=ev.clientX+"px";
+  ghost.style.top=ev.clientY+"px";
+}
+function dropItem(src,dst){
+  const a=state.board[src], b=state.board[dst];
+  if(!a||a.k!=="i") return;
+  if(!b){ state.board[dst]=a; state.board[src]=null; renderBoard(); save(); return; }
+  if(b.k==="c") return;
+  if(b.c===a.c&&b.l===a.l){
+    const maxL=CHAINS[a.c].length-1;
+    const pos=cellCenter(dst);
+    if(a.l<maxL){
+      state.board[dst]={k:"i",c:a.c,l:a.l+1};
+      state.board[src]=null;
+      const now=Date.now();
+      combo=(now-lastMerge<3000)?combo+1:1;
+      lastMerge=now;
+      const gain=(a.l+2)*5*combo;
+      state.coins+=gain;
+      renderBoard(); popCell(dst); updateCoins();
+      spawnFloat(pos.x,pos.y,combo>1?`+${gain} ×${combo}`:`+${gain}`);
+      snd.pop(a.l+1);
+      if(combo>1) snd.coin();
+      if(!state.merged){state.merged=true;$("hint").textContent=t("cloudHint");}
+      questProg("merge");
+      if(a.l+1===maxL) questProg("max");
+      maybeCreature(a.l+1,false);
+    }else{
+      state.board[dst]=null; state.board[src]=null;
+      state.coins+=100;
+      renderBoard(); updateCoins();
+      confetti(pos.x,pos.y);
+      spawnFloat(pos.x,pos.y,"+100");
+      snd.boom();
+      boardEl.classList.add("shake");
+      setTimeout(()=>boardEl.classList.remove("shake"),450);
+      questProg("merge");
+      maybeCreature(maxL,true);
+    }
+    save();
+  }else{
+    state.board[dst]=a; state.board[src]=b; renderBoard(); save();
+  }
+}
+
+/* ---------------- weather ---------------- */
+let thunderTimer=null;
+function setWeather(w){
+  weather=w;
+  document.body.className="w-"+w;
+  $("wIcon").innerHTML=WICONS[w];
+  $("wName").textContent=t("weather")[w];
+  renderParticles(w);
+  clearInterval(thunderTimer); thunderTimer=null;
+  if(w==="storm") thunderTimer=setInterval(()=>snd.thunder(),7000);
+}
+function renderParticles(w){
+  const p=$("particles"); p.innerHTML="";
+  const frag=document.createDocumentFragment();
+  if(w==="rain"||w==="storm"){
+    for(let i=0;i<30;i++){
+      const s=document.createElement("span"); s.className="p-rain";
+      s.style.left=Math.random()*100+"vw";
+      s.style.animationDuration=(0.7+Math.random()*0.7)+"s";
+      s.style.animationDelay=(Math.random()*1.5)+"s";
+      frag.appendChild(s);
+    }
+  }else if(w==="snow"){
+    for(let i=0;i<24;i++){
+      const s=document.createElement("span"); s.className="p-snow";
+      const d=4+Math.random()*5;
+      s.style.width=d+"px"; s.style.height=d+"px";
+      s.style.left=Math.random()*100+"vw";
+      s.style.animationDuration=(5+Math.random()*5)+"s";
+      s.style.animationDelay=(Math.random()*5)+"s";
+      frag.appendChild(s);
+    }
+  }else if(w==="night"){
+    for(let i=0;i<26;i++){
+      const s=document.createElement("span"); s.className="starp";
+      s.style.left=Math.random()*100+"vw";
+      s.style.top=Math.random()*52+"vh";
+      s.style.animationDelay=(Math.random()*2.6)+"s";
+      frag.appendChild(s);
+    }
+  }else if(w==="fog"){
+    for(let i=0;i<3;i++){
+      const s=document.createElement("div"); s.className="fogbank";
+      s.style.top=(8+i*28)+"vh";
+      s.style.animationDelay=(i*3)+"s";
+      frag.appendChild(s);
+    }
+  }else if(w==="rainbow"){
+    const g=document.createElement("div"); g.className="sunfx"; frag.appendChild(g);
+    const r=document.createElement("div"); r.className="rbfx";
+    r.innerHTML=`<svg viewBox="0 0 100 60"><g fill="none" stroke-linecap="round" opacity=".9"><path d="M6 60 A44 44 0 0 1 94 60" stroke="#ff6b6b" stroke-width="7"/><path d="M15 60 A35 35 0 0 1 85 60" stroke="#ffc93c" stroke-width="7"/><path d="M24 60 A26 26 0 0 1 76 60" stroke="#8ce99a" stroke-width="7"/><path d="M33 60 A17 17 0 0 1 67 60" stroke="#5cd6ff" stroke-width="7"/></g></svg>`;
+    frag.appendChild(r);
+  }else if(w==="sunny"){
+    const g=document.createElement("div"); g.className="sunfx"; frag.appendChild(g);
+  }
+  p.appendChild(frag);
+}
+function isNightNow(){ const h=new Date().getHours(); return h>=20||h<7; }
+function cycleWeather(){
+  if(weatherMode!=="cycle") return;
+  if(Math.random()<0.06){ setWeather("rainbow"); return; }
+  const pool=isNightNow()
+    ?["night","night","night","rain","storm","fog"]
+    :["sunny","sunny","rain","rain","storm","snow","fog"];
+  setWeather(pool[Math.floor(Math.random()*pool.length)]);
+}
+setInterval(cycleWeather,75000);
+
+/* real weather via Open-Meteo (works in the packaged app; falls back to demo) */
+function wmoToWeather(code,isDay){
+  if(code>=95) return "storm";
+  if((code>=71&&code<=77)||code===85||code===86) return "snow";
+  if((code>=51&&code<=67)||(code>=80&&code<=82)) return "rain";
+  if(code===45||code===48) return "fog";
+  return isDay?"sunny":"night";
+}
+function useRealWeather(){
+  if(!navigator.geolocation){ toast(t("realFail")); return; }
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const {latitude,longitude}=pos.coords;
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=weather_code,is_day`;
+      const r=await fetch(url); const j=await r.json();
+      weatherMode="real";
+      setWeather(wmoToWeather(j.current.weather_code,j.current.is_day===1));
+      toast(t("realOn"));
+      hideOverlay("balloonOv");
+    }catch(e){ toast(t("realFail")); }
+  },()=>toast(t("realFail")),{timeout:6000});
+}
+
+/* ---------------- daily missions ---------------- */
+function mulberry(seed){
+  return function(){
+    seed|=0; seed=seed+0x6D2B79F5|0;
+    let x=Math.imul(seed^seed>>>15,1|seed);
+    x=x+Math.imul(x^x>>>7,61|x)^x;
+    return ((x^x>>>14)>>>0)/4294967296;
+  };
+}
+const Q_TYPES={merge:{min:8,max:14,reward:60},catch:{min:2,max:3,reward:80},pet:{min:5,max:9,reward:50},max:{min:1,max:1,reward:100}};
+const Q_KEY={merge:"qMerge",catch:"qCatch",pet:"qPet",max:"qMax"};
+function initDaily(){
+  const today=new Date().toISOString().slice(0,10);
+  if(state.daily&&state.daily.date===today) return;
+  const rnd=mulberry(parseInt(today.replace(/-/g,""),10));
+  const keys=Object.keys(Q_TYPES);
+  for(let i=keys.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[keys[i],keys[j]]=[keys[j],keys[i]];}
+  state.daily={date:today,m:keys.slice(0,3).map(tp=>{
+    const c=Q_TYPES[tp];
+    return {t:tp,n:c.min+Math.floor(rnd()*(c.max-c.min+1)),p:0,c:false};
+  })};
+  save();
+}
+function qText(m){ return t(Q_KEY[m.t]).replace("{n}",m.n); }
+function questDot(){
+  const claimable=state.daily&&state.daily.m.some(m=>m.p>=m.n&&!m.c);
+  $("qdot").classList.toggle("show",!!claimable);
+}
+function questProg(type,amt=1){
+  if(!state.daily) return;
+  const m=state.daily.m.find(x=>x.t===type&&!x.c&&x.p<x.n);
+  if(!m) return;
+  m.p=Math.min(m.n,m.p+amt);
+  if(m.p>=m.n){ snd.sparkle(); toast("✓ "+qText(m)); }
+  questDot(); save();
+  if($("questOv").classList.contains("show")) renderQuests();
+}
+const Q_ICON={merge:()=>ITEMS.star[0],catch:()=>CREATURE_ART.sun1,pet:()=>S(`<path d="M50 82 C20 60 14 38 30 28 C40 22 48 28 50 34 C52 28 60 22 70 28 C86 38 80 60 50 82 Z" fill="#ff6b9d"/>`),max:()=>ITEMS.star[3]};
+function renderQuests(){
+  const list=$("questList"); list.innerHTML="";
+  state.daily.m.forEach((m,i)=>{
+    const card=document.createElement("div"); card.className="qcard";
+    const pct=Math.round(100*m.p/m.n);
+    let right;
+    if(m.c) right=`<span class="qdone">✓</span>`;
+    else if(m.p>=m.n) right=`<button class="qgo" data-i="${i}">${t("qClaim")}</button>`;
+    else right=`<span class="qrew">+${Q_TYPES[m.t].reward} ${UI.coin}</span>`;
+    card.innerHTML=`<div class="qicon">${Q_ICON[m.t]()}</div>
+      <div class="qmid"><div class="qtext">${qText(m)} (${m.p}/${m.n})</div>
+      <div class="qbar"><div class="qfill" style="width:${pct}%"></div></div></div>${right}`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll(".qgo").forEach(b=>b.addEventListener("click",()=>{
+    const m=state.daily.m[+b.dataset.i];
+    if(!m||m.c||m.p<m.n) return;
+    m.c=true;
+    state.coins+=Q_TYPES[m.t].reward;
+    updateCoins(); snd.coin(); confetti(innerWidth/2,innerHeight/2);
+    questDot(); renderQuests(); save();
+  }));
+}
+
+/* ---------------- overlays ---------------- */
+function showOverlay(id){ $(id).classList.add("show"); }
+function hideOverlay(id){ $(id).classList.remove("show"); }
+document.querySelectorAll(".closebtn").forEach(b=>b.addEventListener("click",()=>hideOverlay(b.dataset.close)));
+document.querySelectorAll(".overlay").forEach(o=>o.addEventListener("click",ev=>{if(ev.target===o)o.classList.remove("show");}));
+
+function renderDex(){
+  const g=$("dexGrid"); g.innerHTML="";
+  CREATURES.forEach(c=>{
+    const n=state.dex[c.id]||0;
+    const d=document.createElement("div");
+    d.className="dexcard"+(n?"":" locked");
+    d.innerHTML=`<div class="de">${CREATURE_ART[c.id]}</div>
+      <div class="dn">${n?cname(c):"???"}</div>
+      <div class="dr">${WICONS[c.w]} ${t("rarity")[c.r]}</div>
+      <div class="dc">${n?"×"+n:"&nbsp;"}</div>`;
+    g.appendChild(d);
+  });
+}
+function renderWeatherGrid(){
+  const g=$("wGrid"); g.innerHTML="";
+  Object.keys(WICONS).forEach(w=>{
+    const b=document.createElement("button");
+    b.className="wbtn";
+    b.innerHTML=`${WICONS[w]}<small>${t("weather")[w]}</small>`;
+    b.addEventListener("click",()=>{weatherMode="manual";setWeather(w);snd.whoosh();hideOverlay("balloonOv");});
+    g.appendChild(b);
+  });
+}
+
+/* ---------------- buttons ---------------- */
+$("cloudBtn").addEventListener("click",()=>{
+  const btn=$("cloudBtn");
+  if(btn.disabled) return;
+  if(spawnItem()){ btn.disabled=true; setTimeout(()=>btn.disabled=false,1200); }
+});
+$("dexBtn").addEventListener("click",()=>{snd.click();renderDex();showOverlay("dexOv");});
+$("questBtn").addEventListener("click",()=>{snd.click();renderQuests();showOverlay("questOv");});
+$("balloonBtn").addEventListener("click",()=>{snd.click();showOverlay("balloonOv");});
+$("realBtn").addEventListener("click",useRealWeather);
+$("adBtn").addEventListener("click",()=>{
+  const btn=$("adBtn");
+  state.coins+=50; updateCoins(); snd.coin(); toast(t("adDone")); save();
+  btn.disabled=true; setTimeout(()=>btn.disabled=false,30000);
+});
+function muteIcon(){ $("muteIco").innerHTML=state.muted?UI.sndOff:UI.sndOn; }
+$("muteBtn").addEventListener("click",()=>{
+  state.muted=!state.muted; muteIcon(); save();
+  if(!state.muted) snd.click();
+});
+$("langSel").addEventListener("change",ev=>{state.lang=ev.target.value;applyLang();setWeather(weather);});
+
+/* passive income: each caught species produces coins */
+setInterval(()=>{
+  const n=Object.keys(state.dex).length;
+  if(n>0){ state.coins+=n; updateCoins(); save(); }
+},10000);
+
+/* ---------------- init ---------------- */
+load();
+if(!state.lang) state.lang=detectLang();
+const sel=$("langSel");
+Object.keys(LANGS).forEach(k=>{
+  const o=document.createElement("option"); o.value=k; o.textContent=LANGS[k]; sel.appendChild(o);
+});
+sel.value=state.lang;
+$("logoIco").innerHTML=UI.logo;
+$("coinIco").innerHTML=UI.coin;
+$("cloudIco").innerHTML=UI.cloud;
+$("dexIco").innerHTML=UI.dex;
+$("balloonIco").innerHTML=UI.balloon;
+$("adIco").innerHTML=UI.ad;
+$("questIco").innerHTML=Q_ICON.pet();
+const cloudSvg=`<svg viewBox="0 0 100 100">${cloudShape("rgba(255,255,255,.95)")}</svg>`;
+$("cl1").innerHTML=cloudSvg; $("cl2").innerHTML=cloudSvg;
+buildBoard();
+if(state.board.every(c=>!c)){
+  const seed=[["water",0],["water",0],["water",0],["plant",0],["plant",0],["star",0]];
+  const empty=emptyCells();
+  seed.forEach(([c,l])=>{
+    const i=empty.splice(Math.floor(Math.random()*empty.length),1)[0];
+    state.board[i]={k:"i",c,l};
+  });
+}
+muteIcon(); initDaily(); questDot();
+renderBoard(); updateCoins(); applyLang(); rebuildPark();
+const qw=new URLSearchParams(location.search).get("w");
+if(qw&&WICONS[qw]){ weatherMode="manual"; setWeather(qw); }
+else setWeather(isNightNow()?"night":"sunny");
+
+/* splash screen */
+$("sunArt").innerHTML=`<svg class="rays" viewBox="0 0 100 100">${rays(12,26,16,7,"#ffc93c")}</svg>`+
+  `<svg viewBox="0 0 100 100"><defs>${lg("spl","#ffe27a","#ffa801")}</defs><circle cx="50" cy="50" r="26" fill="url(#spl)"/>${eyes(47,9,3.2)}${smile(55,5)}${blush(54,15,3.6)}</svg>`;
+$("splashCloud").innerHTML=cloudSvg;
+$("splashCloud2").innerHTML=cloudSvg;
+const titleEl=$("splashTitle");
+"Meteo Park".split("").forEach((ch,i)=>{
+  const sp=document.createElement("span");
+  sp.textContent=ch===" "?" ":ch;
+  sp.style.animationDelay=(i*0.09)+"s";
+  titleEl.appendChild(sp);
+});
+$("splashTap").textContent=t("tap");
+$("splash").addEventListener("pointerdown",()=>{
+  ac(); snd.sparkle(); startMusic();
+  const sp=$("splash");
+  sp.classList.add("hide");
+  setTimeout(()=>sp.remove(),750);
+},{once:true});
+document.addEventListener("pointerdown",()=>{ac();startMusic();},{once:true});
+if(qw||location.hash==="#gallery"){ const sp=$("splash"); if(sp) sp.remove(); }
+if(new URLSearchParams(location.search).get("ov")==="quests"){ renderQuests(); showOverlay("questOv"); }
+
+/* sprite QA gallery: open with #gallery */
+if(location.hash==="#gallery"){
+  const g=$("gallery"); g.classList.add("show");
+  Object.entries(CHAINS).forEach(([name,arr])=>arr.forEach((svg,i)=>{
+    const d=document.createElement("div"); d.className="gi"; d.innerHTML=svg+`${name} ${i+1}`; g.appendChild(d);
+  }));
+  CREATURES.forEach(c=>{
+    const d=document.createElement("div"); d.className="gi"; d.innerHTML=CREATURE_ART[c.id]+c.id; g.appendChild(d);
+  });
+  Object.entries(WICONS).forEach(([name,svg])=>{
+    const d=document.createElement("div"); d.className="gi"; d.innerHTML=svg+name; g.appendChild(d);
+  });
+}
+</script>
+</body>
+</html>
