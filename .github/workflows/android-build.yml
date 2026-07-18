@@ -1,0 +1,54 @@
+name: Android Build
+
+on:
+  push:
+    branches: [claude/mobile-game-idea-e3tzbu, main, master]
+    paths:
+      - "app/**"
+      - "prototype/**"
+      - ".github/workflows/android-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Capacitor
+        run: npm ci
+
+      - name: Sync web app into native project
+        run: |
+          cp ../prototype/index.html www/index.html
+          npx cap sync android
+
+      - name: Build debug APK (installable for testing)
+        run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - name: Build release AAB (unsigned, for Play Store after signing)
+        run: cd android && ./gradlew bundleRelease --no-daemon
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: meteo-park-debug-apk
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: meteo-park-release-aab
+          path: app/android/app/build/outputs/bundle/release/app-release.aab
