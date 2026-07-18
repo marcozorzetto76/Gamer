@@ -1,0 +1,74 @@
+name: Publish iOS (TestFlight)
+
+# Manual trigger: run this from the Actions tab once the GitHub secrets are set.
+# Required secrets (all from the Apple Developer account):
+#   IOS_P12_BASE64        – Apple Distribution certificate + key (.p12), base64-encoded
+#   IOS_P12_PASSWORD      – password of the .p12
+#   APPSTORE_ISSUER_ID    – App Store Connect API key: issuer ID
+#   APPSTORE_KEY_ID       – App Store Connect API key: key ID
+#   APPSTORE_PRIVATE_KEY  – App Store Connect API key: .p8 private key content
+# The app record (bundle id com.zorzetto.meteopark) must exist in App Store
+# Connect before the first upload.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Capacitor
+        run: npm ci
+
+      - name: Sync web app
+        run: |
+          cp ../prototype/index.html www/index.html
+          npx cap sync ios
+
+      - name: Install CocoaPods dependencies
+        run: cd ios/App && pod install
+
+      - name: Import signing certificate
+        uses: apple-actions/import-codesign-certs@v3
+        with:
+          p12-file-base64: ${{ secrets.IOS_P12_BASE64 }}
+          p12-password: ${{ secrets.IOS_P12_PASSWORD }}
+
+      - name: Download provisioning profiles
+        uses: apple-actions/download-provisioning-profiles@v3
+        with:
+          bundle-id: com.zorzetto.meteopark
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+
+      - name: Archive
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath $RUNNER_TEMP/App.xcarchive archive
+
+      - name: Export IPA
+        run: |
+          cd ios/App
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/App.xcarchive \
+            -exportOptionsPlist ../ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/export
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v3
+        with:
+          app-path: ${{ runner.temp }}/export/App.ipa
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}

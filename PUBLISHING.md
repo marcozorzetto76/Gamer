@@ -1,5 +1,35 @@
 # 📦 Guida alla pubblicazione di Meteo Park
 
+## ⚡ Pubblicazione con un click (già configurata)
+
+Il repository ha tre workflow GitHub Actions:
+
+| Workflow | Cosa fa | Quando |
+|---|---|---|
+| **Android Build** | APK di test + AAB non firmato | automatico a ogni push |
+| **Publish Android (Play Store)** | AAB **firmato** + upload automatico su Play | manuale, dalla tab Actions |
+| **Publish iOS (TestFlight)** | build firmata + upload su TestFlight | manuale, dalla tab Actions |
+
+Per attivare i due workflow di pubblicazione servono le chiavi nei **GitHub Secrets**
+(repo → Settings → Secrets and variables → Actions → New repository secret):
+
+**Android** (la chiave di firma è già stata generata, file `meteo-park-upload.keystore`):
+- `ANDROID_KEYSTORE_BASE64` — contenuto del file `.base64.txt` consegnato con la chiave
+- `ANDROID_KEYSTORE_PASSWORD` — la password consegnata con la chiave
+- `ANDROID_KEY_ALIAS` — `meteopark`
+- `ANDROID_KEY_PASSWORD` — uguale alla password del keystore
+- `PLAY_SERVICE_ACCOUNT_JSON` — (facoltativo, per l'upload automatico) service account
+  creato in Play Console → Impostazioni → Accesso API
+
+**iOS** (si creano nell'account Apple Developer):
+- `IOS_P12_BASE64` + `IOS_P12_PASSWORD` — certificato *Apple Distribution* esportato in .p12
+- `APPSTORE_ISSUER_ID`, `APPSTORE_KEY_ID`, `APPSTORE_PRIVATE_KEY` — chiave API di
+  App Store Connect (Users and Access → Integrations → App Store Connect API)
+
+**Nota**: il primissimo caricamento su Google Play va fatto a mano in Play Console
+(l'API non può creare la scheda dell'app); su App Store Connect va prima creata la
+scheda app con bundle ID `com.zorzetto.meteopark`. Da lì in poi, tutto passa dai workflow.
+
 Il progetto è già impacchettato con [Capacitor](https://capacitorjs.com/): la cartella `app/`
 contiene i progetti nativi **Android** (`app/android/`) e **iOS** (`app/ios/`) pronti da aprire
 in Android Studio e Xcode.
